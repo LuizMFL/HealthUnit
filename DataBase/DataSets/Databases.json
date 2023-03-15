@@ -1,0 +1,15 @@
+{
+    "UnidadeSaude": {
+        "Paciente": {
+            "CPF": {
+                "CHAR": 11
+            },
+            "Nome": {
+                "CHAR": 50
+            },
+            "Telefone": {
+                "CHAR": 11
+            }
+        }
+    }
+}
