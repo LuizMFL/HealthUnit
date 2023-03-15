@@ -1,14 +1,77 @@
 {
     "UnidadeSaude": {
         "Paciente": {
-            "CPF": {
-                "CHAR": 11
+            "Columns": {
+                "ID": {
+                    "INT": 11,
+                    "OPTIONS": [
+                        "UNSIGNED",
+                        "NOT NULL",
+                        "AUTO_INCREMENT",
+                        "UNIQUE"
+                    ]
+                },
+                "CPF": {
+                    "CHAR": 11,
+                    "OPTIONS": [
+                        "NOT NULL",
+                        "UNIQUE"
+                    ]
+                },
+                "Nome": {
+                    "VARCHAR": 20,
+                    "OPTIONS": [
+                        "NOT NULL"
+                    ]
+                },
+                "Telefone": {
+                    "CHAR": 11,
+                    "OPTIONS": [
+                        "NOT NULL"
+                    ]
+                },
+                "Email": {
+                    "CHAR": 50,
+                    "OPTIONS": [
+                        "NOT NULL"
+                    ]
+                },
+                "CEP": {
+                    "CHAR": 8,
+                    "OPTIONS": [
+                        "NOT NULL"
+                    ]
+                },
+                "Complemento": {
+                    "VARCHAR": 20,
+                    "OPTIONS": [
+                        "NOT NULL"
+                    ]
+                },
+                "Idade": {
+                    "INT": 1,
+                    "OPTIONS": [
+                        "NOT NULL"
+                    ]
+                },
+                "Genero": {
+                    "CHAR": 1,
+                    "OPTIONS": [
+                        "NOT NULL"
+                    ]
+                },
+                "Nascimento": {
+                    "DATE": "",
+                    "OPTIONS": [
+                        "NOT NULL"
+                    ]
+                }
             },
-            "Nome": {
-                "CHAR": 50
-            },
-            "Telefone": {
-                "CHAR": 11
+            "CONSTRAINT": {
+                "Name": "PK_Paciente",
+                "PRIMARY KEY": [
+                    "ID"
+                ]
             }
         }
     }

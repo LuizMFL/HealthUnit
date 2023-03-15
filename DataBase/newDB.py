@@ -1,7 +1,7 @@
 import pymysql.cursors
 from contextlib import contextmanager
 from pathlib import Path
-
+from Functions import json_tools
 
 class DataBase:
     def __init__(self) -> None:
@@ -13,11 +13,20 @@ class DataBase:
             'cursorclass': pymysql.cursors.DictCursor,
             'charset': 'utf8mb4'
         }
+        self.create_DB()
 
     def create_DB(self):
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
-                if 
+                schema_DBs = json_tools.get_schema(self.PATH_DataSets + "/Databases.json")
+                cursor.execute("SHOW DATABASES")
+                existing_db = cursor.fetchall()
+                for db_name, tables in schema_DBs.items():
+                    if not db_name in existing_db:
+                        sql = f"CREATE DATABASE IF NOT EXISTS {db_name}"
+                        cursor.execute(sql)
+
+                
     @contextmanager
     def connect_LocalHost(self):
         conn = pymysql.connect(
