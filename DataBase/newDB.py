@@ -25,8 +25,29 @@ class DataBase:
                     if not db_name in existing_db:
                         sql = f"CREATE DATABASE IF NOT EXISTS {db_name}"
                         cursor.execute(sql)
-
-                
+                        self.create_Tables_in_DB(db_name, tables)
+    def create_Tables_in_DB(self, db_name:str, tables:dict):
+        with self.connect_DB(db_name) as conn:
+            with conn.cursor() as cursor:
+                for table_name, columns_constraint in tables.items():
+                    sql = f"CREATE TABLE IF NOT EXISTS {table_name} ("
+                    columns = columns_constraint["Columns"]
+                    constraints = columns_constraint["CONSTRAINT"]
+                    for column_name, type_options in columns.items():
+                        sql += column_name + " " + type_options["TYPE"]
+                        for option in type_options["OPTIONS"]:
+                            sql += f" {option}"
+                        sql += ", "
+                    for type_constraint, name_columns in constraints.items():
+                        sql += f"CONSTRAINT {name_columns['Name']} {type_constraint} ("
+                        for column in name_columns["Columns"]:
+                            sql += f"{column}, "
+                        sql = sql[:-2]
+                        sql += "), "
+                    sql = sql[:-2]
+                    sql += ");"
+                    cursor.execute(sql)
+                        
     @contextmanager
     def connect_LocalHost(self):
         conn = pymysql.connect(

@@ -3,7 +3,7 @@
         "Paciente": {
             "Columns": {
                 "ID": {
-                    "INT": 11,
+                    "TYPE": "INT(11)",
                     "OPTIONS": [
                         "UNSIGNED",
                         "NOT NULL",
@@ -12,66 +12,69 @@
                     ]
                 },
                 "CPF": {
-                    "CHAR": 11,
+                    "TYPE": "CHAR(11)",
                     "OPTIONS": [
                         "NOT NULL",
                         "UNIQUE"
                     ]
                 },
                 "Nome": {
-                    "VARCHAR": 20,
+                    "TYPE": "VARCHAR(20)",
                     "OPTIONS": [
                         "NOT NULL"
                     ]
                 },
                 "Telefone": {
-                    "CHAR": 11,
+                    "TYPE": "CHAR(11)",
                     "OPTIONS": [
                         "NOT NULL"
                     ]
                 },
                 "Email": {
-                    "CHAR": 50,
+                    "TYPE": "VARCHAR(20)",
                     "OPTIONS": [
                         "NOT NULL"
                     ]
                 },
                 "CEP": {
-                    "CHAR": 8,
+                    "TYPE": "CHAR(8)",
                     "OPTIONS": [
                         "NOT NULL"
                     ]
                 },
                 "Complemento": {
-                    "VARCHAR": 20,
+                    "TYPE": "VARCHAR(20)",
                     "OPTIONS": [
                         "NOT NULL"
                     ]
                 },
                 "Idade": {
-                    "INT": 1,
+                    "TYPE": "INT(1)",
                     "OPTIONS": [
+                        "UNSIGNED",
                         "NOT NULL"
                     ]
                 },
                 "Genero": {
-                    "CHAR": 1,
+                    "TYPE": "CHAR(1)",
                     "OPTIONS": [
                         "NOT NULL"
                     ]
                 },
                 "Nascimento": {
-                    "DATE": "",
+                    "TYPE": "DATE",
                     "OPTIONS": [
                         "NOT NULL"
                     ]
                 }
             },
             "CONSTRAINT": {
-                "Name": "PK_Paciente",
-                "PRIMARY KEY": [
-                    "ID"
-                ]
+                "PRIMARY KEY": {
+                    "Name": "PK_Paciente",
+                    "Columns": [
+                        "ID"
+                    ]
+                }
             }
         }
     }
