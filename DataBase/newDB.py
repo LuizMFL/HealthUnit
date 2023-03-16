@@ -18,36 +18,41 @@ class DataBase:
     def create_DB(self):
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
-                schema_DBs = json_tools.get_schema(self.PATH_DataSets + "/Databases.json")
-                cursor.execute("SHOW DATABASES")
+                schema_DBs = json_tools.get_schema(self.PATH_DataSets + '/Databases.json')
+                cursor.execute('SHOW DATABASES;')
                 existing_db = cursor.fetchall()
+                existing_db = [x['Database'] for x in existing_db]
                 for db_name, tables in schema_DBs.items():
                     if not db_name in existing_db:
-                        sql = f"CREATE DATABASE IF NOT EXISTS {db_name}"
-                        cursor.execute(sql)
-                        self.create_Tables_in_DB(db_name, tables)
-    def create_Tables_in_DB(self, db_name:str, tables:dict):
-        with self.connect_DB(db_name) as conn:
-            with conn.cursor() as cursor:
-                for table_name, columns_constraint in tables.items():
-                    sql = f"CREATE TABLE IF NOT EXISTS {table_name} ("
-                    columns = columns_constraint["Columns"]
-                    constraints = columns_constraint["CONSTRAINT"]
-                    for column_name, type_options in columns.items():
-                        sql += column_name + " " + type_options["TYPE"]
-                        for option in type_options["OPTIONS"]:
-                            sql += f" {option}"
-                        sql += ", "
-                    for type_constraint, name_columns in constraints.items():
-                        sql += f"CONSTRAINT {name_columns['Name']} {type_constraint} ("
-                        for column in name_columns["Columns"]:
-                            sql += f"{column}, "
-                        sql = sql[:-2]
-                        sql += "), "
+                        cursor.execute(f'CREATE DATABASE {db_name};')
+                    cursor.execute(f'USE {db_name};')
+                    self.create_Tables_in_DB(db_name, tables, cursor)
+
+    def create_Tables_in_DB(self, db_name:str, tables:dict, cursor:pymysql.cursors.Cursor):
+        cursor.execute('SHOW TABLES;')
+        existing_tables = cursor.fetchall()
+        existing_tables = [x[f'Tables_in_{db_name}'] for x in existing_tables]
+        print(existing_tables)
+        for table_name, columns_constraint in tables.items():
+            if not table_name in existing_tables:
+                sql = f'CREATE TABLE {table_name} ('
+                columns = columns_constraint['Columns']
+                constraints = columns_constraint['CONSTRAINT']
+                for column_name, type_options in columns.items():
+                    sql += column_name + ' ' + type_options['TYPE']
+                    for option in type_options['OPTIONS']:
+                        sql += f' {option}'
+                    sql += ', '
+                for type_constraint, name_columns in constraints.items():
+                    sql += f'CONSTRAINT {name_columns["Name"]} {type_constraint} ('
+                    for column in name_columns['Columns']:
+                        sql += f'{column}, '
                     sql = sql[:-2]
-                    sql += ");"
-                    cursor.execute(sql)
-                        
+                    sql += '), '
+                sql = sql[:-2]
+                sql += ');'
+                cursor.execute(sql)
+
     @contextmanager
     def connect_LocalHost(self):
         conn = pymysql.connect(

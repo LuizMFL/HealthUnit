@@ -1,6 +1,6 @@
 {
-    "UnidadeSaude": {
-        "Paciente": {
+    "unidadesaude": {
+        "paciente": {
             "Columns": {
                 "ID": {
                     "TYPE": "INT(11)",
