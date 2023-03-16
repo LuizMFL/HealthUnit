@@ -1,6 +1,6 @@
 {
     "unidadesaude": {
-        "paciente": {
+        "pessoa": {
             "Columns": {
                 "ID": {
                     "TYPE": "INT(11)",
@@ -42,7 +42,7 @@
                         "NOT NULL"
                     ]
                 },
-                "Complemento": {
+                "Complem_Endereco": {
                     "TYPE": "VARCHAR(20)",
                     "OPTIONS": [
                         "NOT NULL"
@@ -70,10 +70,154 @@
             },
             "CONSTRAINT": {
                 "PRIMARY KEY": {
-                    "Name": "PK_Paciente",
-                    "Columns": [
-                        "ID"
+                    "PK_Pessoa": {
+                        "Columns": [
+                            "ID"
+                        ]
+                    }
+                }
+            }
+        },
+        "paciente": {
+            "Columns": {
+                "ID": {
+                    "TYPE": "INT(11)",
+                    "OPTIONS": [
+                        "UNSIGNED",
+                        "NOT NULL",
+                        "AUTO_INCREMENT",
+                        "UNIQUE"
                     ]
+                },
+                "ID_Pessoa": {
+                    "TYPE": "INT(11)",
+                    "OPTIONS": [
+                        "UNSIGNED",
+                        "NOT NULL",
+                        "UNIQUE"
+                    ]
+                }
+            },
+            "CONSTRAINT": {
+                "PRIMARY KEY": {
+                    "PK_Paciente": {
+                        "Columns": [
+                            "ID"
+                        ]
+                    }
+                },
+                "FOREIGN KEY": {
+                    "FK_Pessoa_Paciente": {
+                        "Columns": [
+                            "ID_Pessoa"
+                        ],
+                        "REFERENCES": "pessoa(ID)"
+                    }
+                }
+            }
+        },
+        "medico": {
+            "Columns": {
+                "ID": {
+                    "TYPE": "INT(11)",
+                    "OPTIONS": [
+                        "UNSIGNED",
+                        "NOT NULL",
+                        "AUTO_INCREMENT",
+                        "UNIQUE"
+                    ]
+                },
+                "ID_Pessoa": {
+                    "TYPE": "INT(11)",
+                    "OPTIONS": [
+                        "UNSIGNED",
+                        "NOT NULL",
+                        "UNIQUE"
+                    ]
+                }
+            },
+            "CONSTRAINT": {
+                "PRIMARY KEY": {
+                    "PK_Medico": {
+                        "Columns": [
+                            "ID"
+                        ]
+                    }
+                },
+                "FOREIGN KEY": {
+                    "FK_Pessoa_Medico": {
+                        "Columns": [
+                            "ID_Pessoa"
+                        ],
+                        "REFERENCES": "pessoa(ID)"
+                    }
+                }
+            }
+        },
+        "especializacao": {
+            "Columns": {
+                "ID": {
+                    "TYPE": "INT(1)",
+                    "OPTIONS": [
+                        "UNSIGNED",
+                        "NOT NULL",
+                        "AUTO_INCREMENT",
+                        "UNIQUE"
+                    ]
+                },
+                "Nome": {
+                    "TYPE": "VARCHAR(20)",
+                    "OPTIONS": [
+                        "NOT NULL",
+                        "UNIQUE"
+                    ]
+                },
+                "Descricao": {
+                    "TYPE": "TEXT",
+                    "OPTIONS": []
+                }
+            },
+            "CONSTRAINT": {
+                "PRIMARY KEY": {
+                    "PK_Especializacao": {
+                        "Columns": [
+                            "ID"
+                        ]
+                    }
+                }
+            }
+        },
+        "medico_especializacao": {
+            "Columns": {
+                "ID_Medico": {
+                    "TYPE": "INT(11)",
+                    "OPTIONS": [
+                        "UNSIGNED",
+                        "NOT NULL"
+                    ]
+                },
+                "ID_Especializacao": {
+                    "TYPE": "INT(1)",
+                    "OPTIONS": [
+                        "UNSIGNED",
+                        "NOT NULL"
+                    ]
+                }
+            },
+            "CONSTRAINT": {
+                "FOREIGN KEY": {
+                    "FK_Medico": {
+                        "Columns": [
+                            "ID_Medico"
+                        ],
+                        "REFERENCES": "medico(ID)"
+                    },
+                    "FK_Especializacao": {
+                        "Columns": [
+                            "ID_Especializacao"
+                        ],
+                        "REFERENCES": "especializacao(ID)"
+                    }
                 }
             }
         }

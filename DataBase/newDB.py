@@ -13,9 +13,9 @@ class DataBase:
             'cursorclass': pymysql.cursors.DictCursor,
             'charset': 'utf8mb4'
         }
-        self.create_DB()
-
-    def create_DB(self):
+        self.Create_DB()
+        
+    def Create_DB(self):
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
                 schema_DBs = json_tools.get_schema(self.PATH_DataSets + '/Databases.json')
@@ -26,13 +26,12 @@ class DataBase:
                     if not db_name in existing_db:
                         cursor.execute(f'CREATE DATABASE {db_name};')
                     cursor.execute(f'USE {db_name};')
-                    self.create_Tables_in_DB(db_name, tables, cursor)
+                    self.Create_Tables_in_DB(db_name, tables, cursor)
 
-    def create_Tables_in_DB(self, db_name:str, tables:dict, cursor:pymysql.cursors.Cursor):
+    def Create_Tables_in_DB(self, db_name:str, tables:dict, cursor:pymysql.cursors.Cursor):
         cursor.execute('SHOW TABLES;')
         existing_tables = cursor.fetchall()
         existing_tables = [x[f'Tables_in_{db_name}'] for x in existing_tables]
-        print(existing_tables)
         for table_name, columns_constraint in tables.items():
             if not table_name in existing_tables:
                 sql = f'CREATE TABLE {table_name} ('
@@ -43,12 +42,16 @@ class DataBase:
                     for option in type_options['OPTIONS']:
                         sql += f' {option}'
                     sql += ', '
-                for type_constraint, name_columns in constraints.items():
-                    sql += f'CONSTRAINT {name_columns["Name"]} {type_constraint} ('
-                    for column in name_columns['Columns']:
-                        sql += f'{column}, '
-                    sql = sql[:-2]
-                    sql += '), '
+                for type_constraint, pk_fk in constraints.items():
+                    for name_constraint, columns_references in pk_fk.items():
+                        sql += f'CONSTRAINT {name_constraint} {type_constraint} ('
+                        for column in columns_references['Columns']:
+                            sql += f'{column}, '
+                        sql = sql[:-2]
+                        sql += '), '
+                        if  type_constraint == 'FOREIGN KEY':
+                            sql = sql[:-2]
+                            sql += f' REFERENCES {columns_references["REFERENCES"]}, '
                 sql = sql[:-2]
                 sql += ');'
                 cursor.execute(sql)
