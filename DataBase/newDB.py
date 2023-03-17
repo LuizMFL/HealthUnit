@@ -2,6 +2,8 @@ import pymysql.cursors
 from contextlib import contextmanager
 from pathlib import Path
 from Functions import json_tools
+import os
+from time import strftime, ctime, time
 
 class DataBase:
     def __init__(self) -> None:
@@ -14,7 +16,7 @@ class DataBase:
             'charset': 'utf8mb4'
         }
         self.Create_DB()
-        
+        self._Backup_DB_Export('unidadesaude')
     def Create_DB(self):
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
@@ -28,6 +30,24 @@ class DataBase:
                     cursor.execute(f'USE {db_name};')
                     self.Create_Tables_in_DB(db_name, tables, cursor)
 
+    def _Backup_DB_Export(self, db_name:str):
+        backups = []
+        maximo_dir = 6
+        for dir in Path(self.PATH_DataSets + r'\Backups').iterdir():
+            if dir.is_file():
+                tempo = os.path.getctime(dir)
+                backups.append((dir, tempo))
+        backups = sorted(backups, key=lambda x: x[1])
+        backups_remove = backups[:len(backups) - maximo_dir]
+        for backup_remove in backups_remove:
+            os.remove(backup_remove[0])
+        filestamp = strftime(r'%d_%m_%Y_%H_%M_%S')
+        dump_name = f'{self.PATH_DataSets}\Backups\Backup_{db_name}_{filestamp}.sql'
+        os.system('mysqldump -h localhost -u root --password=%s %s > %s' % (self.config['password'], db_name, dump_name))
+        print("Fez backup")
+    
+    def _Backup_DB_Import(self, db_name:str):
+        pass
     def Create_Tables_in_DB(self, db_name:str, tables:dict, cursor:pymysql.cursors.Cursor):
         cursor.execute('SHOW TABLES;')
         existing_tables = cursor.fetchall()
@@ -54,6 +74,7 @@ class DataBase:
                             sql += f' REFERENCES {columns_references["REFERENCES"]}, '
                 sql = sql[:-2]
                 sql += ');'
+                print(sql)
                 cursor.execute(sql)
 
     @contextmanager
