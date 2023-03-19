@@ -13,24 +13,22 @@ class DataBase:
             'password': 'Lu1zM1gu3l#My$QL',
             'host': 'localhost',
             'cursorclass': pymysql.cursors.DictCursor,
-            'charset': 'utf8mb4'
+            'charset': 'utf8mb4',
+            'db_name': 'healthunit'
         }
         self.Create_DB()
-        self._Backup_DB_Export('unidadesaude')
+        
     def Create_DB(self):
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
-                schema_DBs = json_tools.get_schema(self.PATH_DataSets + '/Databases.json')
                 cursor.execute('SHOW DATABASES;')
                 existing_db = cursor.fetchall()
                 existing_db = [x['Database'] for x in existing_db]
-                for db_name, tables in schema_DBs.items():
-                    if not db_name in existing_db:
-                        cursor.execute(f'CREATE DATABASE {db_name};')
-                    cursor.execute(f'USE {db_name};')
-                    self.Create_Tables_in_DB(db_name, tables, cursor)
+                if not self.config['db_name'] in existing_db:
+                    self._Backup_DB_Import(True)
 
-    def _Backup_DB_Export(self, db_name:str):
+
+    def _Backup_DB_Export(self):
         backups = []
         maximo_dir = 6
         for dir in Path(self.PATH_DataSets + r'\Backups').iterdir():
@@ -42,40 +40,20 @@ class DataBase:
         for backup_remove in backups_remove:
             os.remove(backup_remove[0])
         filestamp = strftime(r'%d_%m_%Y_%H_%M_%S')
-        dump_name = f'{self.PATH_DataSets}\Backups\Backup_{db_name}_{filestamp}.sql'
-        os.system('mysqldump -h localhost -u root --password=%s %s > %s' % (self.config['password'], db_name, dump_name))
-        print("Fez backup")
+        dump_name = f'{self.PATH_DataSets}\Backups\Backup_{self.config["db_name"]}_{filestamp}.sql'
+        os.system('mysqldump -h %s -u %s --password=%s %s > %s' % (self.config['host'], self.config['user'], self.config['password'], self.config['db_name'], dump_name))
     
-    def _Backup_DB_Import(self, db_name:str):
-        pass
-    def Create_Tables_in_DB(self, db_name:str, tables:dict, cursor:pymysql.cursors.Cursor):
-        cursor.execute('SHOW TABLES;')
-        existing_tables = cursor.fetchall()
-        existing_tables = [x[f'Tables_in_{db_name}'] for x in existing_tables]
-        for table_name, columns_constraint in tables.items():
-            if not table_name in existing_tables:
-                sql = f'CREATE TABLE {table_name} ('
-                columns = columns_constraint['Columns']
-                constraints = columns_constraint['CONSTRAINT']
-                for column_name, type_options in columns.items():
-                    sql += column_name + ' ' + type_options['TYPE']
-                    for option in type_options['OPTIONS']:
-                        sql += f' {option}'
-                    sql += ', '
-                for type_constraint, pk_fk in constraints.items():
-                    for name_constraint, columns_references in pk_fk.items():
-                        sql += f'CONSTRAINT {name_constraint} {type_constraint} ('
-                        for column in columns_references['Columns']:
-                            sql += f'{column}, '
-                        sql = sql[:-2]
-                        sql += '), '
-                        if  type_constraint == 'FOREIGN KEY':
-                            sql = sql[:-2]
-                            sql += f' REFERENCES {columns_references["REFERENCES"]}, '
-                sql = sql[:-2]
-                sql += ');'
-                print(sql)
-                cursor.execute(sql)
+    def _Backup_DB_Import(self, default_schema:bool=False):
+        dump_name = self.PATH_DataSets + r'\struct.sql'
+        if not default_schema:
+            newer_backup = ('', 0)
+            for dir in Path(self.PATH_DataSets + r'\Backups').iterdir():
+                if dir.is_file():
+                    tempo = os.path.getctime(dir)
+                    if tempo >= newer_backup[1]:
+                        newer_backup = (dir, tempo)
+                        dump_name = dir
+        os.system('mysqldump -h %s -u %s --password=%s %s < %s' % (self.config['host'], self.config['user'], self.config['password'], self.config['db_name'], dump_name))
 
     @contextmanager
     def connect_LocalHost(self):
@@ -107,3 +85,4 @@ class DataBase:
 
 if __name__ == "__main__":
     db = DataBase()
+    db._Backup_DB_Export()
