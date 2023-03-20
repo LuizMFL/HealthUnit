@@ -1,7 +1,7 @@
 import pymysql.cursors
 from contextlib import contextmanager
 from pathlib import Path
-from Functions import json_tools
+from Functions import *
 import os
 from datetime import datetime, date, time
 
@@ -16,6 +16,30 @@ class DataBase:
             'charset': 'utf8mb4',
             'db_name': 'healthunit'
         }
+        self.tables_functions = {
+            'pessoa': None,
+            'paciente': None,
+            'profissional': None,
+            'medico': None,
+            'avaliacao_profissional': None,
+            'avaliacao_unidade': None,
+            'especializacao': None,
+            'especializacao_medico': None,
+            'recepcionista': None,
+            'farmaceutico': None,
+            'doenca': None,
+            'remedio': None,
+            'doenca_remedio': None,
+            'doenca_paciente': None,
+            'estoque': None,
+            'calendario': None,
+            'calendario_especializacao_medico': None,
+            'consulta': None,
+            'consulta_disponivel': None,
+            'consulta_paciente_reservada': None,
+            'receita': None,
+            'receita_remedio': None
+        }
         self.Create_DB()
     
     def Select(self, value:dict):
@@ -24,12 +48,12 @@ class DataBase:
                 cursor.execute('SHOW TABLES;')
                 existing_tables = cursor.fetchall()
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
+                where = ''
                 if value['table_name'] in existing_tables:
                     cursor.execute(f'SHOW COLUMNS FROM {value["table_name"]}')
                     existing_columns_in_table = cursor.fetchall()
                     print(existing_columns_in_table)
                     columns_fild_type = {x['Field']: x['Type'] for x in existing_columns_in_table}
-                    aux_columns_where = []
                     for column in value['where']:
                         if column['name'] in columns_fild_type.keys():
                             typ = str(columns_fild_type[column['name']])
@@ -37,9 +61,21 @@ class DataBase:
                             typ = str() if str(typ).count('char') or str(typ).count('text') else typ
                             typ = date() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
-                            if isinstance(column['value'], typ):
-                                pass
-
+                            if not (isinstance(column['value'], type(typ)) and column['operator'] in ['=', '>', '<', '>=', '<=', '<>']):
+                                value['Response'] = (406, 'Operator Error')
+                                return value
+                            where += f'{column["name"]} {column["operator"]} {column["value"]}, '
+                        else:
+                            value['Response'] = (406, 'Column Name Error')
+                            return value
+                    where = where[:-2]
+                    cursor.execute('SELECT * FROM %(table_name)s WHERE %(where)s;'  %({'table_name': value['table_name'], 'where':where}))
+                    value['Result'] = cursor.fetchall()
+                else:
+                    value['Response'] = (406, 'Table Name Error')
+                    return value
+        return value
+                
     def Create_DB(self):
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
@@ -58,7 +94,8 @@ class DataBase:
                 tempo = os.path.getctime(dir)
                 backups.append((dir, tempo))
         backups = sorted(backups, key=lambda x: x[1])
-        backups_remove = backups[:len(backups) - maximo_dir]
+        i = len(backups) - maximo_dir 
+        backups_remove = backups[:i if i >= 0 else 0]
         for backup_remove in backups_remove:
             os.remove(backup_remove[0])
         filestamp = datetime.now().strftime(r'%d_%m_%Y_%H_%M_%S')
@@ -109,4 +146,5 @@ class DataBase:
 if __name__ == "__main__":
     db = DataBase()
     db._Backup_DB_Export()
-    db.Select({'table_name': 'especializacao', 'where': [{'name': 'ID', 'value':2}]})
+    a = db.Select({'table_name': 'especializacao', 'where': [{'name': 'ID', 'value':2, 'operator':'='}]})
+    print(a)

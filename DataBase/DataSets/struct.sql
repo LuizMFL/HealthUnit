@@ -179,21 +179,8 @@ CREATE TABLE IF NOT EXISTS receita_remedio (
 ID_Receita INT UNSIGNED NOT NULL,
 ID_Remedio SMALLINT UNSIGNED NOT NULL,
 Quantidade TINYINT UNSIGNED NOT NULL,
+Retirada BOOLEAN NOT NULL,
 CONSTRAINT FK_Receita_com_remedio FOREIGN KEY (ID_Receita) REFERENCES receita(ID),
 CONSTRAINT FK_Remedio_na_receita FOREIGN KEY (ID_Remedio) REFERENCES remedio(ID),
 CONSTRAINT AK_Receita_Remedio UNIQUE(ID_Receita, ID_Remedio)
-);
-
-CREATE TABLE IF NOT EXISTS receita_remedio_reservada (
-ID_Receita INT UNSIGNED NOT NULL,
-ID_Remedio SMALLINT UNSIGNED NOT NULL,
-CONSTRAINT FK_Receita_Remedio_Reservada FOREIGN KEY (ID_Receita, ID_Remedio) REFERENCES receita_remedio(ID_Receita, ID_Remedio),
-CONSTRAINT AK_Doenca_Paciente UNIQUE(ID_Receita, ID_Remedio)
-);
-
-CREATE TABLE IF NOT EXISTS receita_remedio_retirada (
-ID_Receita INT UNSIGNED NOT NULL,
-ID_Remedio SMALLINT UNSIGNED NOT NULL,
-CONSTRAINT FK_Receita_Remedio_Retirada FOREIGN KEY (ID_Receita, ID_Remedio) REFERENCES receita_remedio(ID_Receita, ID_Remedio),
-CONSTRAINT AK_Doenca_Paciente UNIQUE(ID_Receita, ID_Remedio)
 );
