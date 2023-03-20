@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from Functions import json_tools
 import os
-from time import strftime, ctime, time
+from datetime import datetime, date, time
 
 class DataBase:
     def __init__(self) -> None:
@@ -17,7 +17,29 @@ class DataBase:
             'db_name': 'healthunit'
         }
         self.Create_DB()
-        
+    
+    def Select(self, value:dict):
+        with self.connect_DB() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('SHOW TABLES;')
+                existing_tables = cursor.fetchall()
+                existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
+                if value['table_name'] in existing_tables:
+                    cursor.execute(f'SHOW COLUMNS FROM {value["table_name"]}')
+                    existing_columns_in_table = cursor.fetchall()
+                    print(existing_columns_in_table)
+                    columns_fild_type = {x['Field']: x['Type'] for x in existing_columns_in_table}
+                    aux_columns_where = []
+                    for column in value['where']:
+                        if column['name'] in columns_fild_type.keys():
+                            typ = str(columns_fild_type[column['name']])
+                            typ = int() if str(typ).count('int') else typ
+                            typ = str() if str(typ).count('char') or str(typ).count('text') else typ
+                            typ = date() if str(typ).count('date') else typ
+                            typ = time() if str(typ).count('time') else typ
+                            if isinstance(column['value'], typ):
+                                pass
+
     def Create_DB(self):
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
@@ -39,7 +61,8 @@ class DataBase:
         backups_remove = backups[:len(backups) - maximo_dir]
         for backup_remove in backups_remove:
             os.remove(backup_remove[0])
-        filestamp = strftime(r'%d_%m_%Y_%H_%M_%S')
+        filestamp = datetime.now().strftime(r'%d_%m_%Y_%H_%M_%S')
+        print(filestamp)
         dump_name = f'{self.PATH_DataSets}\Backups\Backup_{self.config["db_name"]}_{filestamp}.sql'
         os.system('mysqldump -h %s -u %s --password=%s %s > %s' % (self.config['host'], self.config['user'], self.config['password'], self.config['db_name'], dump_name))
     
@@ -69,12 +92,12 @@ class DataBase:
             conn.close()
 
     @contextmanager
-    def connect_DB(self, DB_name:str):
+    def connect_DB(self):
         conn = pymysql.connect(
             host=self.config['host'],
             user=self.config['user'],
             password=self.config['password'],
-            db=DB_name,
+            db=self.config['db_name'],
             charset=self.config['charset'],
             cursorclass=self.config['cursorclass']  # Quando fizermos uma consulta, teremos um DICT
         )
@@ -86,3 +109,4 @@ class DataBase:
 if __name__ == "__main__":
     db = DataBase()
     db._Backup_DB_Export()
+    db.Select({'table_name': 'especializacao', 'where': [{'name': 'ID', 'value':2}]})
