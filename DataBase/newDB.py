@@ -83,6 +83,7 @@ class DataBase:
                 existing_db = cursor.fetchall()
                 existing_db = [x['Database'] for x in existing_db]
                 if not self.config['db_name'] in existing_db:
+                    cursor.execute(f'CREATE DATABASE {self.config["db_name"]};')
                     self._Backup_DB_Import(True)
 
 
@@ -99,7 +100,6 @@ class DataBase:
         for backup_remove in backups_remove:
             os.remove(backup_remove[0])
         filestamp = datetime.now().strftime(r'%d_%m_%Y_%H_%M_%S')
-        print(filestamp)
         dump_name = f'{self.PATH_DataSets}\Backups\Backup_{self.config["db_name"]}_{filestamp}.sql'
         os.system('mysqldump -h %s -u %s --password=%s %s > %s' % (self.config['host'], self.config['user'], self.config['password'], self.config['db_name'], dump_name))
     
