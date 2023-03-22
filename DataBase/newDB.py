@@ -140,11 +140,18 @@ class DataBase:
                 if value['table_name'] in existing_tables:
                     value = self.Select_Informations_Column(value, cursor)
                     informations = value.pop('Result')
-                    informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE']} for x in informations}
+                    
+                    informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE'], 'COLUMN_KEY':x['COLUMN_KEY'], 'EXTRA':x['EXTRA']} for x in informations}
+                    informations_locked = {x:y for x,y in informations.items() if y['COLUMN_KEY'] in ['UNI', 'PRI', 'MUL']}
+                    informations_locked_where = {x:y for x,y in informations_locked.items() if y['COLUMN_KEY'] == 'PRI'} if len({x:y for x,y in informations_locked.items() if y['COLUMN_KEY'] == 'PRI'}) else informations_locked
+                    print(informations)
+                    print()
+                    print(informations_locked)
+                    print()
+                    print(informations_locked_where)
+                    
                     sql1 = f'UPDATE {value["table_name"]} SET '
                     sql2 = ' WHERE '
-                    contraint = self.Select_Constraint_Column(value, cursor)
-                    return
                     sequence_column = []
                     for column in value['values']:
                         if column['name'] in informations.keys():
@@ -156,13 +163,14 @@ class DataBase:
                             if not isinstance(column['value'], type(typ)):
                                 value['Response'] = (406, 'Type Value Error')
                                 return value
+                            elif column['name'] in informations_locked.keys():
+                                value['Response'] = (406, f'Update Error In Column {informations_locked[column["name"]]["COLUMN_KEY"]}')
                             sql1 += f'{column["name"]} = ' + '%s, '
                             sequence_column.append(column['value'])
                         else:
                             value['Response'] = (406, 'Column Name Error')
                             return value
-                    sequence_column_where = []
-                    informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE']} for x in informations}
+                    list_column_locked = {}
                     for column in value['where']:
                         if column['name'] in informations.keys():
                             typ = informations[column['name']]['DATA_TYPE']
@@ -171,16 +179,15 @@ class DataBase:
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
                             if not (isinstance(column['value'], type(typ)) and column['operator'] in ['=', '>', '<', '>=', '<=', '<>']):
-                                value['Response'] = (406, 'Operator or Value Type Error')
+                                value['Response'] = (406, 'Operator Error')
                                 return value
-                            where += f'{column["name"]} {column["operator"]} ' + '%s, '
-                            sequence_column_where.append(column['value'])
+                            sql2 += f'{column["name"]} {column["operator"]} ' + '%s, '
+                            sequence_column.append(column['value'])
                         else:
                             value['Response'] = (406, 'Column Name Error')
                             return value
-                    sequence_column = tuple(sequence_column)
-                    where = where[:-2]if len(value['where']) else ''
-                    sql = sql1[:-2] + sql2[:-2] + ');'
+                    sql = sql1[:-2] + sql2[:-2] + ';'
+                    print(sql)
                     sequence_column = tuple(sequence_column)
                     try:
                         cursor.execute(sql, sequence_column)
@@ -286,5 +293,7 @@ if __name__ == "__main__":
     print(f'{b["Response"]} -> {b["Result"]}')
     a = db.Select({'table_name': 'pessoa', 'where': [{'name': 'CPF', 'operator': '=', 'value': '10854389458'}]})
     print(f'{a["Response"]} -> {a["Result"]}')
-    a = db.Select({'table_name': 'receita', 'where': []})
+    a = db.Update({'table_name': 'pessoa', 'values': [{'name':'Nome', 'value': 'Rodrigo'}],'where': [{'name': 'CPF', 'operator':'=', 'value':'10854389458'}, {'name': 'Nome', 'operator':'=', 'value':'Marcos'}]})
+    print(f'{a["Response"]} -> {a["Result"]}')
+    a = db.Select({'table_name': 'pessoa', 'where': [{'name': 'CPF', 'operator': '=', 'value': '10854389458'}]})
     print(f'{a["Response"]} -> {a["Result"]}')
