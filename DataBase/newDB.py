@@ -50,11 +50,10 @@ class DataBase:
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
                 if value['table_name'] in existing_tables:
                     value = self.Select_Informations_Column(value, cursor)
-                    informations = value['Result']
-                    value.pop('Result')
+                    informations = tuple(value.pop('Result'))
                     where = ' WHERE '
                     sequence_column = []
-                    informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE']} for x in informations}
+                    informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE']} for x in informations}
                     for column in value['where']:
                         if column['name'] in informations.keys():
                             typ = informations[column['name']]['DATA_TYPE']
@@ -78,7 +77,7 @@ class DataBase:
                         value['Response'] = (200, 'Select Success')
                     except Exception as e:
                         value['Response'] = (406, e)
-                    value['Result'] = cursor.fetchall()
+                    value['Result'] = tuple(cursor.fetchall())
                 else:
                     value['Response'] = (406, 'Table Name Error')
                     return value
@@ -91,15 +90,15 @@ class DataBase:
                 existing_tables = cursor.fetchall()
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
                 if value['table_name'] in existing_tables:
-                    cursor.execute(f'SHOW COLUMNS FROM {value["table_name"]}')
-                    existing_columns_in_table = cursor.fetchall()
-                    columns_fild_type = {x['Field']: x['Type'] for x in existing_columns_in_table}
+                    value = self.Select_Informations_Column(value, cursor)
+                    informations = value.pop('Result')
+                    informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE'], 'COLUMN_KEY': x['COLUMN_KEY']} for x in informations}
                     sql1 = f'INSERT INTO {value["table_name"]} ('
                     sql2 = ') VALUES ('
                     sequence_column = []
                     for column in value['values']:
-                        if column['name'] in columns_fild_type.keys():
-                            typ = str(columns_fild_type[column['name']])
+                        if column['name'] in informations.keys():
+                            typ = informations[column['name']]['DATA_TYPE']
                             typ = int() if str(typ).count('int') else typ
                             typ = str() if str(typ).count('char') or str(typ).count('text') else typ
                             typ = date.today() if str(typ).count('date') else typ
@@ -125,23 +124,92 @@ class DataBase:
                         conn.rollback()
                         value['Response'] = (406, e)
                     conn.commit()
-                    value['Result'] = cursor.fetchall()
+                    value['Result'] = tuple(cursor.fetchall())
+                else:
+                    value['Response'] = (406, 'Table Name Error')
+                    return value
+        return value
+    
+    #! CONTINUE UPDATE
+    def Update(self, value:dict):
+        with self.connect_DB() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('SHOW TABLES;')
+                existing_tables = cursor.fetchall()
+                existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
+                if value['table_name'] in existing_tables:
+                    value = self.Select_Informations_Column(value, cursor)
+                    informations = value.pop('Result')
+                    informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE']} for x in informations}
+                    sql1 = f'UPDATE {value["table_name"]} SET '
+                    sql2 = ' WHERE '
+                    contraint = self.Select_Constraint_Column(value, cursor)
+                    return
+                    sequence_column = []
+                    for column in value['values']:
+                        if column['name'] in informations.keys():
+                            typ = informations[column['name']]['DATA_TYPE']
+                            typ = int() if str(typ).count('int') else typ
+                            typ = str() if str(typ).count('char') or str(typ).count('text') else typ
+                            typ = date.today() if str(typ).count('date') else typ
+                            typ = time() if str(typ).count('time') else typ
+                            if not isinstance(column['value'], type(typ)):
+                                value['Response'] = (406, 'Type Value Error')
+                                return value
+                            sql1 += f'{column["name"]} = ' + '%s, '
+                            sequence_column.append(column['value'])
+                        else:
+                            value['Response'] = (406, 'Column Name Error')
+                            return value
+                    sequence_column_where = []
+                    informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE']} for x in informations}
+                    for column in value['where']:
+                        if column['name'] in informations.keys():
+                            typ = informations[column['name']]['DATA_TYPE']
+                            typ = int() if str(typ).count('int') else typ
+                            typ = str() if str(typ).count('char') or str(typ).count('text') else typ
+                            typ = date.today() if str(typ).count('date') else typ
+                            typ = time() if str(typ).count('time') else typ
+                            if not (isinstance(column['value'], type(typ)) and column['operator'] in ['=', '>', '<', '>=', '<=', '<>']):
+                                value['Response'] = (406, 'Operator or Value Type Error')
+                                return value
+                            where += f'{column["name"]} {column["operator"]} ' + '%s, '
+                            sequence_column_where.append(column['value'])
+                        else:
+                            value['Response'] = (406, 'Column Name Error')
+                            return value
+                    sequence_column = tuple(sequence_column)
+                    where = where[:-2]if len(value['where']) else ''
+                    sql = sql1[:-2] + sql2[:-2] + ');'
+                    sequence_column = tuple(sequence_column)
+                    try:
+                        cursor.execute(sql, sequence_column)
+                        value['Response'] = (200, 'Insert Success')
+                    except pymysql.err.IntegrityError as e:
+                        conn.rollback()
+                        value['Response'] = (406, 'Integrity Error')
+                    except pymysql.err.DataError as e:
+                        conn.rollback()
+                        value['Response'] = (406, e)
+                    conn.commit()
+                    value['Result'] = tuple(cursor.fetchall())
                 else:
                     value['Response'] = (406, 'Table Name Error')
                     return value
         return value
     
     def Select_Informations_Column(self, value:dict, cursor=None):
+        sql = 'SELECT column_name, data_type, column_type, character_maximum_length, is_nullable, column_key, extra FROM information_schema.columns WHERE table_name = %s;'
         if cursor:
-            cursor.execute('SELECT  column_name, data_type, character_maximum_length, is_nullable FROM information_schema.columns WHERE table_name = %s;', (value['table_name']))
+            cursor.execute(sql, (value['table_name']))
             value['Result'] = cursor.fetchall()
         else:
             with self.connect_DB() as conn:
                 with conn.cursor() as cursor:
-                    cursor.execute('SELECT column_name, data_type, character_maximum_length, is_nullable FROM information_schema.columns WHERE table_name = %s;', (value['table_name']))
+                    cursor.execute(sql, (value['table_name']))
                     value['Result'] = cursor.fetchall()
         return value
-
+    
     def Create_DB(self):
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
@@ -215,6 +283,8 @@ if __name__ == "__main__":
 
     b = db.Insert({'table_name': 'pessoa', 'where': [], 'values':[{'name':'CPF', 'value': '10854389458'}, {'name':'Nome', 'value':'Marcos'}, {'name':'Telefone', 'value':'81999496154'}, {'name':'Email', 'value': 'Luiz.sadadsadaakdajdadkasjdahdadkasskdad'}, {'name':'CEP', 'value':'51231333'}, {'name': 'Genero', 'value':'F'}, {'name':'Nascimento', 'value': date(2001, 4, 20)}, {'name': 'Complem_Endereco', 'value': 'Afonso'}, {'name': 'Idade', 'value': 15}]})
     
-    print(b)
+    print(f'{b["Response"]} -> {b["Result"]}')
     a = db.Select({'table_name': 'pessoa', 'where': [{'name': 'CPF', 'operator': '=', 'value': '10854389458'}]})
-    print(a)
+    print(f'{a["Response"]} -> {a["Result"]}')
+    a = db.Select({'table_name': 'receita', 'where': []})
+    print(f'{a["Response"]} -> {a["Result"]}')
