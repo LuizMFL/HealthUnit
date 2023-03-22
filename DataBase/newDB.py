@@ -48,6 +48,44 @@ class DataBase:
                 cursor.execute('SHOW TABLES;')
                 existing_tables = cursor.fetchall()
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
+                if value['table_name'] in existing_tables:
+                    cursor.execute(f'SHOW COLUMNS FROM {value["table_name"]}')
+                    existing_columns_in_table = cursor.fetchall()
+                    print(existing_columns_in_table)
+                    columns_fild_type = {x['Field']: x['Type'] for x in existing_columns_in_table}
+                    where = ' WHERE '
+                    for column in value['where']:
+                        if column['name'] in columns_fild_type.keys():
+                            typ = str(columns_fild_type[column['name']])
+                            typ = int() if str(typ).count('int') else typ
+                            typ = str() if str(typ).count('char') or str(typ).count('text') else typ
+                            typ = date() if str(typ).count('date') else typ
+                            typ = time() if str(typ).count('time') else typ
+                            if not (isinstance(column['value'], type(typ)) and column['operator'] in ['=', '>', '<', '>=', '<=', '<>']):
+                                value['Response'] = (406, 'Operator Error')
+                                return value
+                            where += f'{column["name"]} {column["operator"]} {column["value"]}, '
+                        else:
+                            value['Response'] = (406, 'Column Name Error')
+                            return value
+                    where = where[:-2] if len(value['where']) else ''
+                    sql = 'SELECT * FROM %s%s;' %(value['table_name'], where)
+                    print(sql)
+                    cursor.execute(sql)
+                    value['Result'] = cursor.fetchall()
+                else:
+                    value['Response'] = (406, 'Table Name Error')
+                    return value
+        return value
+    
+    def Insert(self, value:dict):
+        with self.connect_DB() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('INSERT INTO pessoa (CPF, Nome, Telefone, Email, CEP, Complem_Endereco, Idade, Genero, Nascimento) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)', ('10854389458', 'Luiz', '81999496154', 'luiz.m.fad@hamasd', '50810000', 'nada', 20, 'M', date(2002, 3, 15).strftime('%Y-%m-%d')))
+                conn.commit()
+                """cursor.execute('SHOW TABLES;')
+                existing_tables = cursor.fetchall()
+                existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
                 where = ''
                 if value['table_name'] in existing_tables:
                     cursor.execute(f'SHOW COLUMNS FROM {value["table_name"]}')
@@ -74,8 +112,7 @@ class DataBase:
                 else:
                     value['Response'] = (406, 'Table Name Error')
                     return value
-        return value
-                
+        return value"""
     def Create_DB(self):
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
@@ -84,7 +121,7 @@ class DataBase:
                 existing_db = [x['Database'] for x in existing_db]
                 if not self.config['db_name'] in existing_db:
                     cursor.execute(f'CREATE DATABASE {self.config["db_name"]};')
-                    self._Backup_DB_Import(True)
+        self._Backup_DB_Import(True)
 
 
     def _Backup_DB_Export(self):
@@ -113,7 +150,7 @@ class DataBase:
                     if tempo >= newer_backup[1]:
                         newer_backup = (dir, tempo)
                         dump_name = dir
-        os.system('mysqldump -h %s -u %s --password=%s %s < %s' % (self.config['host'], self.config['user'], self.config['password'], self.config['db_name'], dump_name))
+        os.system('mysql -h %s -u %s --password=%s %s < %s' % (self.config['host'], self.config['user'], self.config['password'], self.config['db_name'], dump_name))
 
     @contextmanager
     def connect_LocalHost(self):
@@ -145,6 +182,8 @@ class DataBase:
 
 if __name__ == "__main__":
     db = DataBase()
-    db._Backup_DB_Export()
-    a = db.Select({'table_name': 'especializacao', 'where': [{'name': 'ID', 'value':2, 'operator':'='}]})
+    #db._Backup_DB_Export()
+
+    db.Insert({})
+    a = db.Select({'table_name': 'pessoa', 'where': []})
     print(a)
