@@ -1,4 +1,4 @@
-import pymysql.cursors
+import pymysql
 from contextlib import contextmanager
 from pathlib import Path
 from Functions import *
@@ -51,7 +51,6 @@ class DataBase:
                 if value['table_name'] in existing_tables:
                     cursor.execute(f'SHOW COLUMNS FROM {value["table_name"]}')
                     existing_columns_in_table = cursor.fetchall()
-                    print(existing_columns_in_table)
                     columns_fild_type = {x['Field']: x['Type'] for x in existing_columns_in_table}
                     where = ' WHERE '
                     for column in value['where']:
@@ -70,7 +69,6 @@ class DataBase:
                             return value
                     where = where[:-2] if len(value['where']) else ''
                     sql = 'SELECT * FROM %s%s;' %(value['table_name'], where)
-                    print(sql)
                     cursor.execute(sql)
                     value['Result'] = cursor.fetchall()
                 else:
@@ -81,38 +79,46 @@ class DataBase:
     def Insert(self, value:dict):
         with self.connect_DB() as conn:
             with conn.cursor() as cursor:
-                cursor.execute('INSERT INTO pessoa (CPF, Nome, Telefone, Email, CEP, Complem_Endereco, Idade, Genero, Nascimento) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)', ('10854389458', 'Luiz', '81999496154', 'luiz.m.fad@hamasd', '50810000', 'nada', 20, 'M', date(2002, 3, 15).strftime('%Y-%m-%d')))
-                conn.commit()
-                """cursor.execute('SHOW TABLES;')
+                cursor.execute('SHOW TABLES;')
                 existing_tables = cursor.fetchall()
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
-                where = ''
                 if value['table_name'] in existing_tables:
                     cursor.execute(f'SHOW COLUMNS FROM {value["table_name"]}')
                     existing_columns_in_table = cursor.fetchall()
-                    print(existing_columns_in_table)
                     columns_fild_type = {x['Field']: x['Type'] for x in existing_columns_in_table}
-                    for column in value['where']:
+                    sql1 = f'INSERT INTO {value["table_name"]} ('
+                    sql2 = ') VALUES ('
+                    sequence_column = []
+                    for column in value['values']:
                         if column['name'] in columns_fild_type.keys():
                             typ = str(columns_fild_type[column['name']])
                             typ = int() if str(typ).count('int') else typ
                             typ = str() if str(typ).count('char') or str(typ).count('text') else typ
-                            typ = date() if str(typ).count('date') else typ
+                            typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
-                            if not (isinstance(column['value'], type(typ)) and column['operator'] in ['=', '>', '<', '>=', '<=', '<>']):
-                                value['Response'] = (406, 'Operator Error')
+                            if not isinstance(column['value'], type(typ)):
+                                value['Response'] = (406, 'Type Value Error')
                                 return value
-                            where += f'{column["name"]} {column["operator"]} {column["value"]}, '
+                            sql1 += f'{column["name"]}, '
+                            sql2 += '%s, '
+                            sequence_column.append(column['value'])
                         else:
                             value['Response'] = (406, 'Column Name Error')
                             return value
-                    where = where[:-2]
-                    cursor.execute('SELECT * FROM %(table_name)s WHERE %(where)s;'  %({'table_name': value['table_name'], 'where':where}))
+                    sql = sql1[:-2] + sql2[:-2] + ');'
+                    sequence_column = tuple(sequence_column)
+                    try:
+                        cursor.execute(sql, sequence_column)
+                    except pymysql.err.IntegrityError as e:
+                        conn.rollback()
+                        value['Response'] = (406, 'Integrity Error')
+                    conn.commit()
                     value['Result'] = cursor.fetchall()
                 else:
                     value['Response'] = (406, 'Table Name Error')
                     return value
-        return value"""
+        return value
+    
     def Create_DB(self):
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
@@ -184,6 +190,8 @@ if __name__ == "__main__":
     db = DataBase()
     #db._Backup_DB_Export()
 
-    db.Insert({})
+    b = db.Insert({'table_name': 'pessoa', 'where': [], 'values':[{'name':'CPF', 'value': '10854389458'}, {'name':'Nome', 'value':'Marcos'}, {'name':'Telefone', 'value':'81999496154'}, {'name':'Email', 'value': 'Luiz.sadadsada'}, {'name':'CEP', 'value':'51231333'}, {'name': 'Genero', 'value':'F'}, {'name':'Nascimento', 'value': date(2001, 4, 20)}, {'name': 'Complem_Endereco', 'value': 'Afonso'}, {'name': 'Idade', 'value': 15}]})
+    
+    print(b)
     a = db.Select({'table_name': 'pessoa', 'where': []})
     print(a)
