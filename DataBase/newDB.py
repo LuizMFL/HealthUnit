@@ -62,7 +62,7 @@ class DataBase:
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
                             if not (isinstance(column['value'], type(typ)) and column['operator'] in ['=', '>', '<', '>=', '<=', '<>']):
-                                value['Response'] = (406, 'Operator Error')
+                                value['Response'] = (406, 'Value Type or Operator Error')
                                 return value
                             where += f'{column["name"]} {column["operator"]} ' + '%s, '
                             sequence_column.append(column['value'])
@@ -104,7 +104,7 @@ class DataBase:
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
                             if not isinstance(column['value'], type(typ)):
-                                value['Response'] = (406, 'Type Value Error')
+                                value['Response'] = (406, 'Value Type Error')
                                 return value
                             sql1 += f'{column["name"]}, '
                             sql2 += '%s, '
@@ -144,12 +144,7 @@ class DataBase:
                     informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE'], 'COLUMN_KEY':x['COLUMN_KEY'], 'EXTRA':x['EXTRA']} for x in informations}
                     informations_locked = {x:y for x,y in informations.items() if y['COLUMN_KEY'] in ['UNI', 'PRI', 'MUL']}
                     informations_locked_where = {x:y for x,y in informations_locked.items() if y['COLUMN_KEY'] == 'PRI'} if len({x:y for x,y in informations_locked.items() if y['COLUMN_KEY'] == 'PRI'}) else informations_locked
-                    print(informations)
-                    print()
-                    print(informations_locked)
-                    print()
                     print(informations_locked_where)
-                    
                     sql1 = f'UPDATE {value["table_name"]} SET '
                     sql2 = ' WHERE '
                     sequence_column = []
@@ -161,7 +156,7 @@ class DataBase:
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
                             if not isinstance(column['value'], type(typ)):
-                                value['Response'] = (406, 'Type Value Error')
+                                value['Response'] = (406, 'Value Type Error')
                                 return value
                             elif column['name'] in informations_locked.keys():
                                 value['Response'] = (406, f'Update Error In Column {informations_locked[column["name"]]["COLUMN_KEY"]}')
@@ -170,7 +165,6 @@ class DataBase:
                         else:
                             value['Response'] = (406, 'Column Name Error')
                             return value
-                    list_column_locked = {}
                     for column in value['where']:
                         if column['name'] in informations.keys():
                             typ = informations[column['name']]['DATA_TYPE']
@@ -178,28 +172,36 @@ class DataBase:
                             typ = str() if str(typ).count('char') or str(typ).count('text') else typ
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
-                            if not (isinstance(column['value'], type(typ)) and column['operator'] in ['=', '>', '<', '>=', '<=', '<>']):
-                                value['Response'] = (406, 'Operator Error')
+                            if not (isinstance(column['value'], type(typ)) and column['operator'] == '='):
+                                value['Response'] = (406, 'Value Type or Operator Error')
                                 return value
-                            sql2 += f'{column["name"]} {column["operator"]} ' + '%s, '
+                            elif column['name'] in informations_locked_where.keys():
+                                informations_locked_where.pop(column['name'])
+                            else: 
+                                value['Response'] = (406, 'Where Whit Not Unique or Primary Column Error')
+                                return value
+                            sql2 += f'{column["name"]} {column["operator"]} ' + '%s AND '
                             sequence_column.append(column['value'])
                         else:
                             value['Response'] = (406, 'Column Name Error')
                             return value
-                    sql = sql1[:-2] + sql2[:-2] + ';'
-                    print(sql)
-                    sequence_column = tuple(sequence_column)
-                    try:
-                        cursor.execute(sql, sequence_column)
-                        value['Response'] = (200, 'Insert Success')
-                    except pymysql.err.IntegrityError as e:
-                        conn.rollback()
-                        value['Response'] = (406, 'Integrity Error')
-                    except pymysql.err.DataError as e:
-                        conn.rollback()
-                        value['Response'] = (406, e)
-                    conn.commit()
-                    value['Result'] = tuple(cursor.fetchall())
+                    if informations_locked_where:
+                        value['Response'] = (406, 'Columns Unique or Primary Not Satisfated Error')
+                    else:
+                        sql = sql1[:-2] + sql2[:-5] + ';'
+                        print(sql)
+                        sequence_column = tuple(sequence_column)
+                        try:
+                            cursor.execute(sql, sequence_column)
+                            value['Response'] = (200, 'Update Success')
+                        except pymysql.err.IntegrityError as e:
+                            conn.rollback()
+                            value['Response'] = (406, 'Integrity Error')
+                        except pymysql.err.DataError as e:
+                            conn.rollback()
+                            value['Response'] = (406, e)
+                        conn.commit()
+                        value['Result'] = tuple(cursor.fetchall())
                 else:
                     value['Response'] = (406, 'Table Name Error')
                     return value
@@ -293,7 +295,7 @@ if __name__ == "__main__":
     print(f'{b["Response"]} -> {b["Result"]}')
     a = db.Select({'table_name': 'pessoa', 'where': [{'name': 'CPF', 'operator': '=', 'value': '10854389458'}]})
     print(f'{a["Response"]} -> {a["Result"]}')
-    a = db.Update({'table_name': 'pessoa', 'values': [{'name':'Nome', 'value': 'Rodrigo'}],'where': [{'name': 'CPF', 'operator':'=', 'value':'10854389458'}, {'name': 'Nome', 'operator':'=', 'value':'Marcos'}]})
+    a = db.Update({'table_name': 'pessoa', 'values': [{'name':'Nome', 'value': 'Rodrigo'}],'where': [{'name': 'ID', 'operator':'=', 'value':1}]})
     print(f'{a["Response"]} -> {a["Result"]}')
-    a = db.Select({'table_name': 'pessoa', 'where': [{'name': 'CPF', 'operator': '=', 'value': '10854389458'}]})
+    a = db.Select({'table_name': 'pessoa', 'where': [{'name': 'ID', 'operator': '=', 'value': 1}]})
     print(f'{a["Response"]} -> {a["Result"]}')
