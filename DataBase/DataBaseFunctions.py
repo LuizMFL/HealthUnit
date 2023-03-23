@@ -1,10 +1,9 @@
 import pymysql
 from contextlib import contextmanager
 from pathlib import Path
-from Functions import *
 import os
 from datetime import datetime, date, time
-
+from ctypes import c_uint8 as tinyint, c_uint16 as smallint, c_uint, c_uint32, c_uint64
 class DataBase:
     def __init__(self) -> None:
         self.PATH_DataSets = str(Path(__file__).parent / 'Datasets')
@@ -16,44 +15,59 @@ class DataBase:
             'charset': 'utf8mb4',
             'db_name': 'healthunit'
         }
-        self.tables_functions = {
-            'pessoa': None,
-            'paciente': None,
-            'profissional': None,
-            'medico': None,
-            'avaliacao_profissional': None,
-            'avaliacao_unidade': None,
-            'especializacao': None,
-            'especializacao_medico': None,
-            'recepcionista': None,
-            'farmaceutico': None,
-            'doenca': None,
-            'remedio': None,
-            'doenca_remedio': None,
-            'doenca_paciente': None,
-            'estoque': None,
-            'calendario': None,
-            'calendario_especializacao_medico': None,
-            'consulta': None,
-            'consulta_disponivel': None,
-            'consulta_paciente_reservada': None,
-            'receita': None,
-            'receita_remedio': None
+        self.functions = {
+            'Insert': self.Insert,
+            'Select': self.Select,
+            'Update': self.Update,
+            'Delete': self.Delete,
+            'Backup': self.Select_Backup
+        }
+        self.types = {
+            'tinyint unsigned': tinyint,
+            'smallint unsigned': smallint,
+            'mediumint unsigned': c_uint32,
+            'int unsigned': c_uint32
         }
         self.Create_DB()
 
-    def Select(self, value:dict):
+    def Select_function(self, value:dict) -> dict:
+        if value['function'] in self.functions.keys():
+            value = self.functions[value['function']](value)
+        else:
+            value['Response'] = (406, "Function not Exists")
+            value['Result'] = ()
+        return value
+    
+    def Select_Backup(self, value:dict) -> dict:
+        if value['values'][0]['name'] == 'Export':
+            try:
+                self._Backup_DB_Export()
+                value['Response'] = (200, 'Export Success')
+            except Exception as e:
+                value['Response'] = (406, f'Export Error: {e}')
+        else:
+            try:
+                self._Backup_DB_Import()
+                value['Response'] = (200, 'Import Success')
+            except Exception as e:
+                value['Response'] = (406, f'Import Error: {e}')
+        value['Result'] = ()
+        return value
+        
+    def Select(self, value:dict) -> dict:
         with self.connect_DB() as conn:
             with conn.cursor() as cursor:
                 cursor.execute('SHOW TABLES;')
                 existing_tables = cursor.fetchall()
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
+                value['Result'] = ()
                 if value['table_name'] in existing_tables:
                     value = self.Select_Informations_Column(value, cursor)
                     informations = tuple(value.pop('Result'))
+                    informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE']} for x in informations}
+                    value['Result'] = ()
                     where = ' WHERE '
                     sequence_column = []
-                    informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE']} for x in informations}
                     for column in value['where']:
                         if column['name'] in informations.keys():
                             typ = informations[column['name']]['DATA_TYPE']
@@ -64,13 +78,22 @@ class DataBase:
                             if not (isinstance(column['value'], type(typ)) and column['operator'] in ['=', '>', '<', '>=', '<=', '<>']):
                                 value['Response'] = (406, 'Value Type or Operator Error')
                                 return value
-                            where += f'{column["name"]} {column["operator"]} ' + '%s, '
+                            elif 'unsigned' in informations[column['name']]['COLUMN_TYPE']:
+                                unsignedtype = self.types[informations[column['name']]['COLUMN_TYPE']]
+                                max_unsigned = unsignedtype(-1)
+                                if 'medium' in informations[column['name']]['COLUMN_TYPE']:
+                                    max_unsigned = c_uint(16777215)
+                                max_unsigned = c_uint(max_unsigned.value)
+                                if not (0 <= column['value'] and c_uint64(column['value']).value <= max_unsigned.value):
+                                    value['Response'] = (406, 'Value Type not in Range of Type Operator Error')
+                                    return value
+                            where += f'{column["name"]} {column["operator"]} ' + '%s AND '
                             sequence_column.append(column['value'])
                         else:
                             value['Response'] = (406, 'Column Name Error')
                             return value
                     sequence_column = tuple(sequence_column)
-                    where = where[:-2]if len(value['where']) else ''
+                    where = where[:-5]if len(value['where']) else ''
                     sql = f'SELECT * FROM {value["table_name"]}{where};'
                     try:
                         cursor.execute(sql, sequence_column)
@@ -83,16 +106,18 @@ class DataBase:
                     return value
         return value
     
-    def Insert(self, value:dict):
+    def Insert(self, value:dict) -> dict:
         with self.connect_DB() as conn:
             with conn.cursor() as cursor:
                 cursor.execute('SHOW TABLES;')
                 existing_tables = cursor.fetchall()
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
+                value['Result'] = ()
                 if value['table_name'] in existing_tables:
                     value = self.Select_Informations_Column(value, cursor)
                     informations = value.pop('Result')
                     informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE'], 'COLUMN_KEY': x['COLUMN_KEY']} for x in informations}
+                    value['Result'] = ()
                     sql1 = f'INSERT INTO {value["table_name"]} ('
                     sql2 = ') VALUES ('
                     sequence_column = []
@@ -106,6 +131,15 @@ class DataBase:
                             if not isinstance(column['value'], type(typ)):
                                 value['Response'] = (406, 'Value Type Error')
                                 return value
+                            elif 'unsigned' in informations[column['name']]['COLUMN_TYPE']:
+                                unsignedtype = self.types[informations[column['name']]['COLUMN_TYPE']]
+                                max_unsigned = unsignedtype(-1)
+                                if 'medium' in informations[column['name']]['COLUMN_TYPE']:
+                                    max_unsigned = c_uint(16777215)
+                                max_unsigned = c_uint(max_unsigned.value)
+                                if not (0 <= column['value'] and c_uint64(column['value']).value <= max_unsigned.value):
+                                    value['Response'] = (406, 'Value Type not in Range of Type Operator Error')
+                                    return value
                             sql1 += f'{column["name"]}, '
                             sql2 += '%s, '
                             sequence_column.append(column['value'])
@@ -130,21 +164,20 @@ class DataBase:
                     return value
         return value
     
-    #! CONTINUE UPDATE
-    def Update(self, value:dict):
+    def Update(self, value:dict) -> dict:
         with self.connect_DB() as conn:
             with conn.cursor() as cursor:
                 cursor.execute('SHOW TABLES;')
                 existing_tables = cursor.fetchall()
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
+                value['Result'] = ()
                 if value['table_name'] in existing_tables:
                     value = self.Select_Informations_Column(value, cursor)
                     informations = value.pop('Result')
-                    
                     informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE'], 'COLUMN_KEY':x['COLUMN_KEY'], 'EXTRA':x['EXTRA']} for x in informations}
                     informations_locked = {x:y for x,y in informations.items() if y['COLUMN_KEY'] in ['UNI', 'PRI', 'MUL']}
                     informations_locked_where = {x:y for x,y in informations_locked.items() if y['COLUMN_KEY'] == 'PRI'} if len({x:y for x,y in informations_locked.items() if y['COLUMN_KEY'] == 'PRI'}) else informations_locked
-                    print(informations_locked_where)
+                    value['Result'] = ()
                     sql1 = f'UPDATE {value["table_name"]} SET '
                     sql2 = ' WHERE '
                     sequence_column = []
@@ -158,8 +191,18 @@ class DataBase:
                             if not isinstance(column['value'], type(typ)):
                                 value['Response'] = (406, 'Value Type Error')
                                 return value
-                            elif column['name'] in informations_locked.keys():
+                            elif 'unsigned' in informations[column['name']]['COLUMN_TYPE']:
+                                unsignedtype = self.types[informations[column['name']]['COLUMN_TYPE']]
+                                max_unsigned = unsignedtype(-1)
+                                if 'medium' in informations[column['name']]['COLUMN_TYPE']:
+                                    max_unsigned = c_uint(16777215)
+                                max_unsigned = c_uint(max_unsigned.value)
+                                if not (0 <= column['value'] and c_uint64(column['value']).value <= max_unsigned.value):
+                                    value['Response'] = (406, 'Value Type not in Range of Type Operator Error')
+                                    return value
+                            if column['name'] in informations_locked.keys():
                                 value['Response'] = (406, f'Update Error In Column {informations_locked[column["name"]]["COLUMN_KEY"]}')
+                                return value
                             sql1 += f'{column["name"]} = ' + '%s, '
                             sequence_column.append(column['value'])
                         else:
@@ -175,7 +218,16 @@ class DataBase:
                             if not (isinstance(column['value'], type(typ)) and column['operator'] == '='):
                                 value['Response'] = (406, 'Value Type or Operator Error')
                                 return value
-                            elif column['name'] in informations_locked_where.keys():
+                            elif 'unsigned' in informations[column['name']]['COLUMN_TYPE']:
+                                unsignedtype = self.types[informations[column['name']]['COLUMN_TYPE']]
+                                max_unsigned = unsignedtype(-1)
+                                if 'medium' in informations[column['name']]['COLUMN_TYPE']:
+                                    max_unsigned = c_uint(16777215)
+                                max_unsigned = c_uint(max_unsigned.value)
+                                if not (0 <= column['value'] and c_uint64(column['value']).value <= max_unsigned.value):
+                                    value['Response'] = (406, 'Value Type not in Range of Type Operator Error')
+                                    return value
+                            if column['name'] in informations_locked_where.keys():
                                 informations_locked_where.pop(column['name'])
                             else: 
                                 value['Response'] = (406, 'Where Whit Not Unique or Primary Column Error')
@@ -189,7 +241,6 @@ class DataBase:
                         value['Response'] = (406, 'Columns Unique or Primary Not Satisfated Error')
                     else:
                         sql = sql1[:-2] + sql2[:-5] + ';'
-                        print(sql)
                         sequence_column = tuple(sequence_column)
                         try:
                             cursor.execute(sql, sequence_column)
@@ -207,19 +258,83 @@ class DataBase:
                     return value
         return value
     
-    def Select_Informations_Column(self, value:dict, cursor=None):
-        sql = 'SELECT column_name, data_type, column_type, character_maximum_length, is_nullable, column_key, extra FROM information_schema.columns WHERE table_name = %s;'
+    def Delete(self, value:dict) -> dict:
+        with self.connect_DB() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute('SHOW TABLES;')
+                existing_tables = cursor.fetchall()
+                existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
+                value['Result'] = ()
+                if value['table_name'] in existing_tables:
+                    value = self.Select_Informations_Column(value, cursor)
+                    informations = value.pop('Result')
+                    informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE'], 'COLUMN_KEY':x['COLUMN_KEY'], 'EXTRA':x['EXTRA']} for x in informations}
+                    informations_locked = {x:y for x,y in informations.items() if y['COLUMN_KEY'] in ['UNI', 'PRI', 'MUL']}
+                    informations_locked_where = {x:y for x,y in informations_locked.items() if y['COLUMN_KEY'] == 'PRI'} if len({x:y for x,y in informations_locked.items() if y['COLUMN_KEY'] == 'PRI'}) else informations_locked
+                    value['Result'] = ()
+                    sql = f'DELETE FROM {value["table_name"]} WHERE '
+                    sequence_column = []
+                    for column in value['where']:
+                        if column['name'] in informations.keys():
+                            typ = informations[column['name']]['DATA_TYPE']
+                            typ = int() if str(typ).count('int') else typ
+                            typ = str() if str(typ).count('char') or str(typ).count('text') else typ
+                            typ = date.today() if str(typ).count('date') else typ
+                            typ = time() if str(typ).count('time') else typ
+                            if not (isinstance(column['value'], type(typ)) and column['operator'] == '='):
+                                value['Response'] = (406, 'Value Type or Operator Error')
+                                return value
+                            elif 'unsigned' in informations[column['name']]['COLUMN_TYPE']:
+                                unsignedtype = self.types[informations[column['name']]['COLUMN_TYPE']]
+                                max_unsigned = unsignedtype(-1)
+                                if 'medium' in informations[column['name']]['COLUMN_TYPE']:
+                                    max_unsigned = c_uint(16777215)
+                                max_unsigned = c_uint(max_unsigned.value)
+                                if not (0 <= column['value'] and c_uint64(column['value']).value <= max_unsigned.value):
+                                    value['Response'] = (406, 'Value Type not in Range of Type Operator Error')
+                                    return value
+                            if column['name'] in informations_locked_where.keys():
+                                informations_locked_where.pop(column['name'])
+                            else: 
+                                value['Response'] = (406, 'Where Whit Not Unique or Primary Column Error')
+                                return value
+                            sql += f'{column["name"]} {column["operator"]} ' + '%s AND '
+                            sequence_column.append(column['value'])
+                        else:
+                            value['Response'] = (406, 'Column Name Error')
+                            return value
+                    sequence_column = tuple(sequence_column)
+                    sql = sql[:-5] + ';'
+                    try:
+                        cursor.execute(sql, sequence_column)
+                        value['Response'] = (200, 'Delete Success')
+                    except pymysql.err.IntegrityError as e:
+                        conn.rollback()
+                        value['Response'] = (406, 'Integrity Error')
+                    except pymysql.err.DataError as e:
+                        conn.rollback()
+                        value['Response'] = (406, e)
+                    conn.commit()
+                    value['Result'] = tuple(cursor.fetchall())
+                else:
+                    value['Response'] = (406, 'Table Name Error')
+                    return value
+        return value
+    
+    def Select_Informations_Column(self, value:dict, cursor=None) -> dict:
+        sql = 'SELECT column_name, data_type, column_type, character_maximum_length, is_nullable, column_key, extra FROM information_schema.columns WHERE table_schema = %s AND table_name = %s;'
+        dados = (self.config['db_name'], value['table_name'])
         if cursor:
-            cursor.execute(sql, (value['table_name']))
+            cursor.execute(sql, dados)
             value['Result'] = cursor.fetchall()
         else:
             with self.connect_DB() as conn:
                 with conn.cursor() as cursor:
-                    cursor.execute(sql, (value['table_name']))
+                    cursor.execute(sql, dados)
                     value['Result'] = cursor.fetchall()
         return value
     
-    def Create_DB(self):
+    def Create_DB(self) -> None:
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
                 cursor.execute('SHOW DATABASES;')
@@ -230,7 +345,7 @@ class DataBase:
         self._Backup_DB_Import(True)
 
 
-    def _Backup_DB_Export(self):
+    def _Backup_DB_Export(self) -> None:
         backups = []
         maximo_dir = 6
         for dir in Path(self.PATH_DataSets + r'\Backups').iterdir():
@@ -246,7 +361,7 @@ class DataBase:
         dump_name = f'{self.PATH_DataSets}\Backups\Backup_{self.config["db_name"]}_{filestamp}.sql'
         os.system('mysqldump -h %s -u %s --password=%s %s > %s' % (self.config['host'], self.config['user'], self.config['password'], self.config['db_name'], dump_name))
     
-    def _Backup_DB_Import(self, default_schema:bool=False):
+    def _Backup_DB_Import(self, default_schema:bool=False) -> None:
         dump_name = self.PATH_DataSets + r'\struct.sql'
         if not default_schema:
             newer_backup = ('', 0)
@@ -288,14 +403,17 @@ class DataBase:
 
 if __name__ == "__main__":
     db = DataBase()
-    #db._Backup_DB_Export()
-
-    b = db.Insert({'table_name': 'pessoa', 'where': [], 'values':[{'name':'CPF', 'value': '10854389458'}, {'name':'Nome', 'value':'Marcos'}, {'name':'Telefone', 'value':'81999496154'}, {'name':'Email', 'value': 'Luiz.sadadsadaakdajdadkasjdahdadkasskdad'}, {'name':'CEP', 'value':'51231333'}, {'name': 'Genero', 'value':'F'}, {'name':'Nascimento', 'value': date(2001, 4, 20)}, {'name': 'Complem_Endereco', 'value': 'Afonso'}, {'name': 'Idade', 'value': 15}]})
+    #? Examples:
+    a = db.Select_function({'function': 'Insert','table_name': 'pessoa', 'where': [], 'values':[{'name':'CPF', 'value': '10854389458'}, {'name':'Nome', 'value':'Marcos'}, {'name':'Telefone', 'value':'81999496154'}, {'name':'Email', 'value': 'Luiz.sadadsadaakdajdadkasjdahdadkasskdad'}, {'name':'CEP', 'value':'51231333'}, {'name': 'Genero', 'value':'F'}, {'name':'Nascimento', 'value': date(2001, 4, 20)}, {'name': 'Complem_Endereco', 'value': 'Afonso'}, {'name': 'Idade', 'value': 15}]})
+    print(f'{a["Response"]} -> {a["Result"]}')
+    a = db.Select_function({'function': 'Update', 'table_name': 'pessoa', 'values': [{'name':'Nome', 'value': 'Rodrigo'}],'where': [{'name': 'ID', 'operator':'=', 'value':3}]})
+    print(f'{a["Response"]} -> {a["Result"]}')
+    a = db.Select_function({'function': 'Delete','table_name': 'pessoa', 'where': [{'name': 'ID', 'operator': '=', 'value': 1}]})
+    print(f'{a["Response"]} -> {a["Result"]}')
+    a = db.Select_function({'function': 'Select','table_name': 'pessoa', 'where': [{'name': 'CPF', 'operator': '=', 'value': '10854389458'}]})
+    print(f'{a["Response"]} -> {a["Result"]}')
+    a = db.Select_function({'function': 'Backup', 'values': [{'name': 'Export'}]})
+    print(f'{a["Response"]} -> {a["Result"]}')
+    a = db.Select_function({'function': 'Backup', 'values': [{'name': 'Import'}]})
+    print(f'{a["Response"]} -> {a["Result"]}')
     
-    print(f'{b["Response"]} -> {b["Result"]}')
-    a = db.Select({'table_name': 'pessoa', 'where': [{'name': 'CPF', 'operator': '=', 'value': '10854389458'}]})
-    print(f'{a["Response"]} -> {a["Result"]}')
-    a = db.Update({'table_name': 'pessoa', 'values': [{'name':'Nome', 'value': 'Rodrigo'}],'where': [{'name': 'ID', 'operator':'=', 'value':1}]})
-    print(f'{a["Response"]} -> {a["Result"]}')
-    a = db.Select({'table_name': 'pessoa', 'where': [{'name': 'ID', 'operator': '=', 'value': 1}]})
-    print(f'{a["Response"]} -> {a["Result"]}')
