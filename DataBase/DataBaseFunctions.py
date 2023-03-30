@@ -16,11 +16,11 @@ class DataBase:
             'db_name': 'healthunit'
         }
         self.functions = {
-            'Insert': self.Insert,
-            'Select': self.Select,
-            'Update': self.Update,
-            'Delete': self.Delete,
-            'Backup': self.Select_Backup
+            'Insert': self._Insert,
+            'Select': self._Select,
+            'Update': self._Update,
+            'Delete': self._Delete,
+            'Backup': self._Select_Backup
         }
         self.types = {
             'tinyint unsigned': tinyint,
@@ -28,7 +28,7 @@ class DataBase:
             'mediumint unsigned': c_uint32,
             'int unsigned': c_uint32
         }
-        self.Create_DB()
+        self._Create_DB()
 
     def Select_function(self, value:dict) -> dict:
         if value['function'] in self.functions.keys():
@@ -36,9 +36,18 @@ class DataBase:
         else:
             value['Response'] = (406, "Function not Exists")
             value['Result'] = ()
+        
+        value['Result'] = list(value['Result'])
+        for i, dict_result in enumerate(value['Result']):
+            for key in dict(dict_result).keys():
+                if isinstance(dict_result[key], type(date.today())):
+                    value['Result'][i][key] = dict_result[key].strftime('%d-%m-%Y')
+                elif isinstance(dict_result[key], type(time.max)):
+                    value['Result'][i][key] = dict_result[key].strftime('%H:%M:%S')
+        value['Result'] = tuple(value['Result'])
         return value
     
-    def Select_Backup(self, value:dict) -> dict:
+    def _Select_Backup(self, value:dict) -> dict:
         if value['values'][0]['name'] == 'Export':
             try:
                 self._Backup_DB_Export()
@@ -54,7 +63,9 @@ class DataBase:
         value['Result'] = ()
         return value
         
-    def Select(self, value:dict) -> dict:
+    def _Select(self, value_Original:dict) -> dict:
+        value = dict(value_Original)
+        value_Original['Result'] = ()
         with self.connect_DB() as conn:
             with conn.cursor() as cursor:
                 cursor.execute('SHOW TABLES;')
@@ -62,7 +73,7 @@ class DataBase:
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
                 value['Result'] = ()
                 if value['table_name'] in existing_tables:
-                    value = self.Select_Informations_Column(value, cursor)
+                    value = self._Select_Informations_Column(value, cursor)
                     informations = tuple(value.pop('Result'))
                     informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE']} for x in informations}
                     value['Result'] = ()
@@ -75,8 +86,20 @@ class DataBase:
                             typ = str() if str(typ).count('char') or str(typ).count('text') else typ
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
+                            if isinstance(typ, type(date.today())):
+                                try:
+                                    column['value'] = datetime.strptime(column['value'], '%d-%m-%Y').date()
+                                except Exception:
+                                    value_Original['Response'] = (406, 'Format Date Error')
+                                    return value_Original
+                            elif isinstance(typ, type(time.max)):
+                                try:
+                                    column['value'] = datetime.strptime(column['value'], '%H:%M:%S').time()
+                                except Exception:
+                                    value_Original['Response'] = (406, 'Format Date Error')
+                                    return value_Original
                             if not (isinstance(column['value'], type(typ)) and column['operator'] in ['=', '>', '<', '>=', '<=', '<>']):
-                                value['Response'] = (406, 'Value Type or Operator Error')
+                                value_Original['Response'] = (406, 'Value Type or Operator Error')
                                 return value
                             elif 'unsigned' in informations[column['name']]['COLUMN_TYPE']:
                                 unsignedtype = self.types[informations[column['name']]['COLUMN_TYPE']]
@@ -85,28 +108,30 @@ class DataBase:
                                     max_unsigned = c_uint(16777215)
                                 max_unsigned = c_uint(max_unsigned.value)
                                 if not (0 <= column['value'] and c_uint64(column['value']).value <= max_unsigned.value):
-                                    value['Response'] = (406, 'Value Type not in Range of Type Operator Error')
-                                    return value
+                                    value_Original['Response'] = (406, 'Value Type not in Range of Type Operator Error')
+                                    return value_Original
                             where += f'{column["name"]} {column["operator"]} ' + '%s AND '
                             sequence_column.append(column['value'])
                         else:
-                            value['Response'] = (406, 'Column Name Error')
-                            return value
+                            value_Original['Response'] = (406, 'Column Name Error')
+                            return value_Original
                     sequence_column = tuple(sequence_column)
                     where = where[:-5]if len(value['where']) else ''
                     sql = f'SELECT * FROM {value["table_name"]}{where};'
                     try:
                         cursor.execute(sql, sequence_column)
-                        value['Response'] = (200, 'Select Success')
+                        value_Original['Response'] = (200, 'Select Success')
                     except Exception as e:
-                        value['Response'] = (406, e)
-                    value['Result'] = tuple(cursor.fetchall())
+                        value_Original['Response'] = (406, e)
+                    value_Original['Result'] = tuple(cursor.fetchall())
                 else:
-                    value['Response'] = (406, 'Table Name Error')
-                    return value
-        return value
+                    value_Original['Response'] = (406, 'Table Name Error')
+                    return value_Original
+        return value_Original
     
-    def Insert(self, value:dict) -> dict:
+    def _Insert(self, value_Original:dict) -> dict:
+        value = dict(value_Original)
+        value_Original['Result'] = ()
         with self.connect_DB() as conn:
             with conn.cursor() as cursor:
                 cursor.execute('SHOW TABLES;')
@@ -114,7 +139,7 @@ class DataBase:
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
                 value['Result'] = ()
                 if value['table_name'] in existing_tables:
-                    value = self.Select_Informations_Column(value, cursor)
+                    value = self._Select_Informations_Column(value, cursor)
                     informations = value.pop('Result')
                     informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE'], 'COLUMN_KEY': x['COLUMN_KEY']} for x in informations}
                     value['Result'] = ()
@@ -128,9 +153,21 @@ class DataBase:
                             typ = str() if str(typ).count('char') or str(typ).count('text') else typ
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
+                            if isinstance(typ, type(date.today())):
+                                try:
+                                    column['value'] = datetime.strptime(column['value'], '%d-%m-%Y').date()
+                                except Exception:
+                                    value_Original['Response'] = (406, 'Format Date Error')
+                                    return value_Original
+                            elif isinstance(typ, type(time.max)):
+                                try:
+                                    column['value'] = datetime.strptime(column['value'], '%H:%M:%S').time()
+                                except Exception:
+                                    value_Original['Response'] = (406, 'Format Date Error')
+                                    return value_Original
                             if not isinstance(column['value'], type(typ)):
-                                value['Response'] = (406, 'Value Type Error')
-                                return value
+                                value_Original['Response'] = (406, 'Value Type Error')
+                                return value_Original
                             elif 'unsigned' in informations[column['name']]['COLUMN_TYPE']:
                                 unsignedtype = self.types[informations[column['name']]['COLUMN_TYPE']]
                                 max_unsigned = unsignedtype(-1)
@@ -138,33 +175,36 @@ class DataBase:
                                     max_unsigned = c_uint(16777215)
                                 max_unsigned = c_uint(max_unsigned.value)
                                 if not (0 <= column['value'] and c_uint64(column['value']).value <= max_unsigned.value):
-                                    value['Response'] = (406, 'Value Type not in Range of Type Operator Error')
-                                    return value
+                                    value_Original['Response'] = (406, 'Value Type not in Range of Type Operator Error')
+                                    return value_Original
                             sql1 += f'{column["name"]}, '
                             sql2 += '%s, '
                             sequence_column.append(column['value'])
                         else:
-                            value['Response'] = (406, 'Column Name Error')
-                            return value
+                            value_Original['Response'] = (406, 'Column Name Error')
+                            return value_Original
                     sql = sql1[:-2] + sql2[:-2] + ');'
                     sequence_column = tuple(sequence_column)
                     try:
                         cursor.execute(sql, sequence_column)
-                        value['Response'] = (200, 'Insert Success')
+                        value_Original['Response'] = (200, 'Insert Success')
                     except pymysql.err.IntegrityError as e:
                         conn.rollback()
-                        value['Response'] = (406, 'Integrity Error')
+                        value_Original['Response'] = (406, 'Integrity Error')
                     except pymysql.err.DataError as e:
                         conn.rollback()
-                        value['Response'] = (406, e)
+                        value_Original['Response'] = (406, e)
                     conn.commit()
-                    value['Result'] = tuple(cursor.fetchall())
+                    value_Original['Result'] = tuple(cursor.fetchall())
                 else:
-                    value['Response'] = (406, 'Table Name Error')
-                    return value
-        return value
+                    value_Original['Response'] = (406, 'Table Name Error')
+                    return value_Original
+        print(value_Original)
+        return value_Original
     
-    def Update(self, value:dict) -> dict:
+    def _Update(self, value_Original:dict) -> dict:
+        value = dict(value_Original)
+        value_Original['Result'] = ()
         with self.connect_DB() as conn:
             with conn.cursor() as cursor:
                 cursor.execute('SHOW TABLES;')
@@ -172,7 +212,7 @@ class DataBase:
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
                 value['Result'] = ()
                 if value['table_name'] in existing_tables:
-                    value = self.Select_Informations_Column(value, cursor)
+                    value = self._Select_Informations_Column(value, cursor)
                     informations = value.pop('Result')
                     informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE'], 'COLUMN_KEY':x['COLUMN_KEY'], 'EXTRA':x['EXTRA']} for x in informations}
                     informations_locked = {x:y for x,y in informations.items() if y['COLUMN_KEY'] in ['UNI', 'PRI', 'MUL']}
@@ -188,9 +228,21 @@ class DataBase:
                             typ = str() if str(typ).count('char') or str(typ).count('text') else typ
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
+                            if isinstance(typ, type(date.today())):
+                                try:
+                                    column['value'] = datetime.strptime(column['value'], '%d-%m-%Y').date()
+                                except Exception:
+                                    value_Original['Response'] = (406, 'Format Date Error')
+                                    return value_Original
+                            elif isinstance(typ, type(time.max)):
+                                try:
+                                    column['value'] = datetime.strptime(column['value'], '%H:%M:%S').time()
+                                except Exception:
+                                    value_Original['Response'] = (406, 'Format Date Error')
+                                    return value_Original
                             if not isinstance(column['value'], type(typ)):
-                                value['Response'] = (406, 'Value Type Error')
-                                return value
+                                value_Original['Response'] = (406, 'Value Type Error')
+                                return value_Original
                             elif 'unsigned' in informations[column['name']]['COLUMN_TYPE']:
                                 unsignedtype = self.types[informations[column['name']]['COLUMN_TYPE']]
                                 max_unsigned = unsignedtype(-1)
@@ -198,16 +250,16 @@ class DataBase:
                                     max_unsigned = c_uint(16777215)
                                 max_unsigned = c_uint(max_unsigned.value)
                                 if not (0 <= column['value'] and c_uint64(column['value']).value <= max_unsigned.value):
-                                    value['Response'] = (406, 'Value Type not in Range of Type Operator Error')
-                                    return value
+                                    value_Original['Response'] = (406, 'Value Type not in Range of Type Operator Error')
+                                    return value_Original
                             if column['name'] in informations_locked.keys():
-                                value['Response'] = (406, f'Update Error In Column {informations_locked[column["name"]]["COLUMN_KEY"]}')
-                                return value
+                                value_Original['Response'] = (406, f'Update Error In Column {informations_locked[column["name"]]["COLUMN_KEY"]}')
+                                return value_Original
                             sql1 += f'{column["name"]} = ' + '%s, '
                             sequence_column.append(column['value'])
                         else:
-                            value['Response'] = (406, 'Column Name Error')
-                            return value
+                            value_Original['Response'] = (406, 'Column Name Error')
+                            return value_Original
                     for column in value['where']:
                         if column['name'] in informations.keys():
                             typ = informations[column['name']]['DATA_TYPE']
@@ -215,9 +267,21 @@ class DataBase:
                             typ = str() if str(typ).count('char') or str(typ).count('text') else typ
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
+                            if isinstance(typ, type(date.today())):
+                                try:
+                                    column['value'] = datetime.strptime(column['value'], '%d-%m-%Y').date()
+                                except Exception:
+                                    value_Original['Response'] = (406, 'Format Date Error')
+                                    return value_Original
+                            elif isinstance(typ, type(time.max)):
+                                try:
+                                    column['value'] = datetime.strptime(column['value'], '%H:%M:%S').time()
+                                except Exception:
+                                    value_Original['Response'] = (406, 'Format Date Error')
+                                    return value_Original
                             if not (isinstance(column['value'], type(typ)) and column['operator'] == '='):
-                                value['Response'] = (406, 'Value Type or Operator Error')
-                                return value
+                                value_Original['Response'] = (406, 'Value Type or Operator Error')
+                                return value_Original
                             elif 'unsigned' in informations[column['name']]['COLUMN_TYPE']:
                                 unsignedtype = self.types[informations[column['name']]['COLUMN_TYPE']]
                                 max_unsigned = unsignedtype(-1)
@@ -225,40 +289,42 @@ class DataBase:
                                     max_unsigned = c_uint(16777215)
                                 max_unsigned = c_uint(max_unsigned.value)
                                 if not (0 <= column['value'] and c_uint64(column['value']).value <= max_unsigned.value):
-                                    value['Response'] = (406, 'Value Type not in Range of Type Operator Error')
-                                    return value
+                                    value_Original['Response'] = (406, 'Value Type not in Range of Type Operator Error')
+                                    return value_Original
                             if column['name'] in informations_locked_where.keys():
                                 informations_locked_where.pop(column['name'])
                             else: 
-                                value['Response'] = (406, 'Where Whit Not Unique or Primary Column Error')
-                                return value
+                                value_Original['Response'] = (406, 'Where Whit Not Unique or Primary Column Error')
+                                return value_Original
                             sql2 += f'{column["name"]} {column["operator"]} ' + '%s AND '
                             sequence_column.append(column['value'])
                         else:
-                            value['Response'] = (406, 'Column Name Error')
-                            return value
+                            value_Original['Response'] = (406, 'Column Name Error')
+                            return value_Original
                     if informations_locked_where:
-                        value['Response'] = (406, 'Columns Unique or Primary Not Satisfated Error')
+                        value_Original['Response'] = (406, 'Columns Unique or Primary Not Satisfated Error')
                     else:
                         sql = sql1[:-2] + sql2[:-5] + ';'
                         sequence_column = tuple(sequence_column)
                         try:
                             cursor.execute(sql, sequence_column)
-                            value['Response'] = (200, 'Update Success')
+                            value_Original['Response'] = (200, 'Update Success')
                         except pymysql.err.IntegrityError as e:
                             conn.rollback()
-                            value['Response'] = (406, 'Integrity Error')
+                            value_Original['Response'] = (406, 'Integrity Error')
                         except pymysql.err.DataError as e:
                             conn.rollback()
-                            value['Response'] = (406, e)
+                            value_Original['Response'] = (406, e)
                         conn.commit()
-                        value['Result'] = tuple(cursor.fetchall())
+                        value_Original['Result'] = tuple(cursor.fetchall())
                 else:
-                    value['Response'] = (406, 'Table Name Error')
-                    return value
-        return value
+                    value_Original['Response'] = (406, 'Table Name Error')
+                    return value_Original
+        return value_Original
     
-    def Delete(self, value:dict) -> dict:
+    def _Delete(self, value_Original:dict) -> dict:
+        value = dict(value_Original)
+        value_Original['Result'] = ()
         with self.connect_DB() as conn:
             with conn.cursor() as cursor:
                 cursor.execute('SHOW TABLES;')
@@ -266,7 +332,7 @@ class DataBase:
                 existing_tables = [x[f'Tables_in_{self.config["db_name"]}'] for x in existing_tables]
                 value['Result'] = ()
                 if value['table_name'] in existing_tables:
-                    value = self.Select_Informations_Column(value, cursor)
+                    value = self._Select_Informations_Column(value, cursor)
                     informations = value.pop('Result')
                     informations = {x['COLUMN_NAME']:{'DATA_TYPE': x['DATA_TYPE'], 'COLUMN_TYPE': x['COLUMN_TYPE'], 'COLUMN_KEY':x['COLUMN_KEY'], 'EXTRA':x['EXTRA']} for x in informations}
                     informations_locked = {x:y for x,y in informations.items() if y['COLUMN_KEY'] in ['UNI', 'PRI', 'MUL']}
@@ -281,9 +347,21 @@ class DataBase:
                             typ = str() if str(typ).count('char') or str(typ).count('text') else typ
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
+                            if isinstance(typ, type(date.today())):
+                                try:
+                                    column['value'] = datetime.strptime(column['value'], '%d-%m-%Y').date()
+                                except Exception:
+                                    value_Original['Response'] = (406, 'Format Date Error')
+                                    return value_Original
+                            elif isinstance(typ, type(time.max)):
+                                try:
+                                    column['value'] = datetime.strptime(column['value'], '%H:%M:%S').time()
+                                except Exception:
+                                    value_Original['Response'] = (406, 'Format Time Error')
+                                    return value_Original
                             if not (isinstance(column['value'], type(typ)) and column['operator'] == '='):
-                                value['Response'] = (406, 'Value Type or Operator Error')
-                                return value
+                                value_Original['Response'] = (406, 'Value Type or Operator Error')
+                                return value_Original
                             elif 'unsigned' in informations[column['name']]['COLUMN_TYPE']:
                                 unsignedtype = self.types[informations[column['name']]['COLUMN_TYPE']]
                                 max_unsigned = unsignedtype(-1)
@@ -291,37 +369,37 @@ class DataBase:
                                     max_unsigned = c_uint(16777215)
                                 max_unsigned = c_uint(max_unsigned.value)
                                 if not (0 <= column['value'] and c_uint64(column['value']).value <= max_unsigned.value):
-                                    value['Response'] = (406, 'Value Type not in Range of Type Operator Error')
-                                    return value
+                                    value_Original['Response'] = (406, 'Value Type not in Range of Type Operator Error')
+                                    return value_Original
                             if column['name'] in informations_locked_where.keys():
                                 informations_locked_where.pop(column['name'])
                             else: 
-                                value['Response'] = (406, 'Where Whit Not Unique or Primary Column Error')
-                                return value
+                                value_Original['Response'] = (406, 'Where Whit Not Unique or Primary Column Error')
+                                return value_Original
                             sql += f'{column["name"]} {column["operator"]} ' + '%s AND '
                             sequence_column.append(column['value'])
                         else:
-                            value['Response'] = (406, 'Column Name Error')
-                            return value
+                            value_Original['Response'] = (406, 'Column Name Error')
+                            return value_Original
                     sequence_column = tuple(sequence_column)
                     sql = sql[:-5] + ';'
                     try:
                         cursor.execute(sql, sequence_column)
-                        value['Response'] = (200, 'Delete Success')
+                        value_Original['Response'] = (200, 'Delete Success')
                     except pymysql.err.IntegrityError as e:
                         conn.rollback()
-                        value['Response'] = (406, 'Integrity Error')
+                        value_Original['Response'] = (406, 'Integrity Error')
                     except pymysql.err.DataError as e:
                         conn.rollback()
-                        value['Response'] = (406, e)
+                        value_Original['Response'] = (406, e)
                     conn.commit()
-                    value['Result'] = tuple(cursor.fetchall())
+                    value_Original['Result'] = tuple(cursor.fetchall())
                 else:
-                    value['Response'] = (406, 'Table Name Error')
-                    return value
-        return value
+                    value_Original['Response'] = (406, 'Table Name Error')
+                    return value_Original
+        return value_Original
     
-    def Select_Informations_Column(self, value:dict, cursor=None) -> dict:
+    def _Select_Informations_Column(self, value:dict, cursor=None) -> dict:
         sql = 'SELECT column_name, data_type, column_type, character_maximum_length, is_nullable, column_key, extra FROM information_schema.columns WHERE table_schema = %s AND table_name = %s;'
         dados = (self.config['db_name'], value['table_name'])
         if cursor:
@@ -334,7 +412,7 @@ class DataBase:
                     value['Result'] = cursor.fetchall()
         return value
     
-    def Create_DB(self) -> None:
+    def _Create_DB(self) -> None:
         with self.connect_LocalHost() as conn:
             with conn.cursor() as cursor:
                 cursor.execute('SHOW DATABASES;')
@@ -404,7 +482,7 @@ class DataBase:
 if __name__ == "__main__":
     db = DataBase()
     #? Examples:
-    a = db.Select_function({'function': 'Insert','table_name': 'pessoa', 'where': [], 'values':[{'name':'CPF', 'value': '10854389458'}, {'name':'Nome', 'value':'Marcos'}, {'name':'Telefone', 'value':'81999496154'}, {'name':'Email', 'value': 'Luiz.sadadsadaakdajdadkasjdahdadkasskdad'}, {'name':'CEP', 'value':'51231333'}, {'name': 'Genero', 'value':'F'}, {'name':'Nascimento', 'value': date(2001, 4, 20)}, {'name': 'Complem_Endereco', 'value': 'Afonso'}, {'name': 'Idade', 'value': 15}]})
+    a = db.Select_function({'function': 'Insert','table_name': 'pessoa', 'where': [], 'values':[{'name':'CPF', 'value': '10854389459'}, {'name':'Nome', 'value':'Marcos'}, {'name':'Telefone', 'value':'81999496154'}, {'name':'Email', 'value': 'Luiz.sadadsadaakdajdadkasjdahdadkasskdad'}, {'name':'CEP', 'value':'51231333'}, {'name': 'Genero', 'value':'F'}, {'name':'Nascimento', 'value': '2000-03-20'}, {'name': 'Complem_Endereco', 'value': 'Afonso'}, {'name': 'Idade', 'value': 15}]})
     print(f'{a["Response"]} -> {a["Result"]}')
     a = db.Select_function({'function': 'Update', 'table_name': 'pessoa', 'values': [{'name':'Nome', 'value': 'Rodrigo'}],'where': [{'name': 'ID', 'operator':'=', 'value':3}]})
     print(f'{a["Response"]} -> {a["Result"]}')
