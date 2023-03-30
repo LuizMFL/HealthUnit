@@ -31,20 +31,35 @@ class DataBase:
         self._Create_DB()
 
     def Select_function(self, value:dict) -> dict:
-        if value['function'] in self.functions.keys():
-            value = self.functions[value['function']](value)
-        else:
-            value['Response'] = (406, "Function not Exists")
-            value['Result'] = ()
-        
-        value['Result'] = list(value['Result'])
-        for i, dict_result in enumerate(value['Result']):
-            for key in dict(dict_result).keys():
-                if isinstance(dict_result[key], type(date.today())):
-                    value['Result'][i][key] = dict_result[key].strftime('%d-%m-%Y')
-                elif isinstance(dict_result[key], type(time.max)):
-                    value['Result'][i][key] = dict_result[key].strftime('%H:%M:%S')
-        value['Result'] = tuple(value['Result'])
+        try:
+            if value['function'] in self.functions.keys():
+                value = self.functions[value['function']](value)
+            else:
+                value['Response'] = (406, "Function not Exists")
+                value['Result'] = ()
+            
+            if 'values' in value.keys():
+                for i, dict_value in enumerate(value['values']):
+                    if 'value' in dict_value.keys():
+                        if isinstance(dict_value['value'], type(date.today())):
+                            value['values'][i]['value'] = dict_value['value'].strftime('%d-%m-%Y')
+                        elif isinstance(dict_value['value'], type(time.max)):
+                            value['values'][i]['value'] = dict_value['value'].strftime('%H:%M:%S')
+            value['Result'] = tuple(value['Result'])
+            for i, dict_result in enumerate(value['Result']):
+                for key in dict(dict_result).keys():
+                    if isinstance(dict_result[key], type(date.today())):
+                        value['Result'][i][key] = dict_result[key].strftime('%d-%m-%Y')
+                    elif isinstance(dict_result[key], type(time.max)):
+                        value['Result'][i][key] = dict_result[key].strftime('%H:%M:%S')
+            value['Result'] = tuple(value['Result'])
+        except Exception:
+            if isinstance(value, dict):
+                value['Response'] = (406, 'Dict Format Error')
+                value['Result'] = ()
+            else:
+                value = {'Result': (), }
+                
         return value
     
     def _Select_Backup(self, value:dict) -> dict:
@@ -199,7 +214,6 @@ class DataBase:
                 else:
                     value_Original['Response'] = (406, 'Table Name Error')
                     return value_Original
-        print(value_Original)
         return value_Original
     
     def _Update(self, value_Original:dict) -> dict:
@@ -482,13 +496,13 @@ class DataBase:
 if __name__ == "__main__":
     db = DataBase()
     #? Examples:
-    a = db.Select_function({'function': 'Insert','table_name': 'pessoa', 'where': [], 'values':[{'name':'CPF', 'value': '10854389459'}, {'name':'Nome', 'value':'Marcos'}, {'name':'Telefone', 'value':'81999496154'}, {'name':'Email', 'value': 'Luiz.sadadsadaakdajdadkasjdahdadkasskdad'}, {'name':'CEP', 'value':'51231333'}, {'name': 'Genero', 'value':'F'}, {'name':'Nascimento', 'value': '2000-03-20'}, {'name': 'Complem_Endereco', 'value': 'Afonso'}, {'name': 'Idade', 'value': 15}]})
+    a = db.Select_function({'function': 'Insert','table_name': 'pessoa', 'where': [], 'values':[{'name':'CPF', 'value': '10854389451'}, {'name':'Nome', 'value':'Marcos'}, {'name':'Telefone', 'value':'81999496154'}, {'name':'Email', 'value': 'Luiz.sadadsadaakdajdadkasjdahdadkasskdad'}, {'name':'CEP', 'value':'51231333'}, {'name': 'Genero', 'value':'F'}, {'name':'Nascimento', 'value': '20-03-2000'}, {'name': 'Complem_Endereco', 'value': 'Afonso'}, {'name': 'Idade', 'value': 15}]})
     print(f'{a["Response"]} -> {a["Result"]}')
     a = db.Select_function({'function': 'Update', 'table_name': 'pessoa', 'values': [{'name':'Nome', 'value': 'Rodrigo'}],'where': [{'name': 'ID', 'operator':'=', 'value':3}]})
     print(f'{a["Response"]} -> {a["Result"]}')
     a = db.Select_function({'function': 'Delete','table_name': 'pessoa', 'where': [{'name': 'ID', 'operator': '=', 'value': 1}]})
     print(f'{a["Response"]} -> {a["Result"]}')
-    a = db.Select_function({'function': 'Select','table_name': 'pessoa', 'where': [{'name': 'CPF', 'operator': '=', 'value': '10854389458'}]})
+    a = db.Select_function({'function': 'Select','table_name': 'pessoa', 'where': []})
     print(f'{a["Response"]} -> {a["Result"]}')
     a = db.Select_function({'function': 'Backup', 'values': [{'name': 'Export'}]})
     print(f'{a["Response"]} -> {a["Result"]}')
