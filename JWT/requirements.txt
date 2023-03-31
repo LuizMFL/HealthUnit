@@ -1,0 +1,6 @@
+PyJWT
+cryptography
+bcrypt
+
+
+passlib
