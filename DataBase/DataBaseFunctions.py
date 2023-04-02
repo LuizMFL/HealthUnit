@@ -500,7 +500,7 @@ if __name__ == "__main__":
     print(f'{a["Response"]} -> {a["Result"]}')
     a = db.Select_function({'function': 'Update', 'table_name': 'pessoa', 'values': [{'name':'Nome', 'value': 'Rodrigo'}],'where': [{'name': 'ID', 'operator':'=', 'value':3}]})
     print(f'{a["Response"]} -> {a["Result"]}')
-    a = db.Select_function({'function': 'Delete','table_name': 'pessoa', 'where': [{'name': 'ID', 'operator': '=', 'value': 1}]})
+    a = db.Select_function({'function': 'Delete','table_name': 'pessoa', 'where': [{'name': 'CPF', 'operator': '=', 'value': '10854389458'}]})
     print(f'{a["Response"]} -> {a["Result"]}')
     a = db.Select_function({'function': 'Select','table_name': 'pessoa', 'where': []})
     print(f'{a["Response"]} -> {a["Result"]}')
