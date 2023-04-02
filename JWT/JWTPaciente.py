@@ -11,6 +11,7 @@ class JWT:
         self.__priKey = serialization.load_ssh_private_key(self.__private_key.encode(), password=b'L0g1nP4c13nt3')
         self.__public_key = open(f'{self.__Path_SSH}/paciente.pub', 'r').read()
         self.__pubKey = serialization.load_ssh_public_key(self.__public_key.encode())
+
     def new_token(self):
         payload_data = {
             'sub': 'paciente',
@@ -25,13 +26,15 @@ class JWT:
     
     def _validation_token(self, token:str):
         try:
-            jwt.decode(token, self.__public_key, ['RS256', ])
-            return ('Success', True)
+            payload = jwt.decode(token, self.__public_key, ['RS256', ])
+            username: str = payload.get("sub")
+            if username is None:
+                return {'status': {'value':401, 'message':'Invalid authentication credentials'}, 'payload':payload}
+            return {'status': {'value':200, 'message':'Success'}, 'payload':payload}
         except jwt.InvalidSignatureError as e:
-            return (f'ERROR -> Signature is invalid', False)
+            return {'status': {'value':401, 'message':'Invalid Signature Error'}, 'payload':''}
         except jwt.ExpiredSignatureError as e:
-            return (f'ERROR -> Signature has expired', False)
+            return {'status': {'value':401, 'message':'Expired Signature Error'}, 'payload':''}
 
 if __name__ == '__main__':
     j = JWT()
-    token = j.new_token()
