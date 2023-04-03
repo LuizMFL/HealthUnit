@@ -10,7 +10,7 @@ class Paciente:
     def get_paciente(self, cpf:str):
         response = {'Response': (406, 'Failed')}
         if len(cpf) == 11:
-            response_pe = self.get_pessoa(cpf)
+            response_pe = self._get_pessoa(cpf)
             response = response_pe
             if response_pe['Response'][0] == 200 and response_pe['Results']['Result']:
                 get_pa = {'function': 'Select','table_name': 'paciente', 'where': [{'name': 'ID_Pessoa', 'operator': '=', 'value': response_pe['Results']['Result'][0]['ID']}]}
@@ -21,7 +21,7 @@ class Paciente:
                         response['Results']['Result'][0][key] = response_pe['Results']['Result'][0][key]
         return response
     
-    def get_pessoa(self, cpf:str):
+    def _get_pessoa(self, cpf:str):
         cpf = re.sub('[^0-9]+', '', cpf)
         get_pe = {'function': 'Select','table_name': 'pessoa', 'where': [{'name': 'CPF', 'operator': '=', 'value': cpf}]}
         response = self.response_in_DB(get_pe)
@@ -30,18 +30,49 @@ class Paciente:
     def cadastro_pa(self, value:dict):
         response = {'Response': (406, 'Failed')}
         if len(value['CPF']) == 11:
-            response_pe = self.cadastro_pe(value)
+            response_pe = self._cadastro_pe(value)
             response = response_pe
             if response_pe['Results']['Response'][0] == 200:
-                id_pessoa = self.get_pessoa(value['CPF'])['Results']['Result'][0]['ID']
+                id_pessoa = self._get_pessoa(value['CPF'])['Results']['Result'][0]['ID']
                 set_pa = {'function': 'Insert', 'table_name': 'paciente', 'values': [{'name': 'ID_Pessoa', 'value': id_pessoa}]}
                 response_pa = self.response_in_DB(set_pa)
                 response = response_pa
         return response
-    def cadastro_pe(self, value:dict):
-        set_pe = {'function': 'Insert', 'table_name': 'pessoa', 'values': [{'name':'CPF', 'value': re.sub('[^0-9]+', '',value['CPF'])}, {'name':'Nome', 'value':re.sub('[^a-zA-Z ]+', '',value['Nome'])}, {'name':'Telefone', 'value': re.sub('[^0-9]+', '',value['Telefone'])}, {'name':'Email', 'value': value['Email']}, {'name':'CEP', 'value': re.sub('[^0-9]+', '',value['CEP'])}, {'name': 'Genero', 'value': value['Genero']}, {'name':'Nascimento', 'value': str(value['Nascimento'])}, {'name': 'Complem_Endereco', 'value': value['Complem_Endereco']}, {'name': 'Idade', 'value': int(value['Idade'])}]}
+    def _cadastro_pe(self, value:dict):
+        set_pe = {'function': 'Insert', 'table_name': 'pessoa', 'values': self._normalize_type(value, 'values')}
         response_pe = self.response_in_DB(set_pe)
         return response_pe
+    
+    def update_pe(self, value:dict): 
+        value_w = {}
+        if 'CPF' in value.keys():
+            value_w['CPF'] = value.pop('CPF')
+        if 'ID' in value.keys():
+            value_w['ID'] = value.pop('CPF')
+        response = {'Response': (406, 'Failed')}
+        if value_w.keys():
+            upd_pe = {'function': 'Update', 'table_name': 'pessoa', 'where': self._normalize_type(value_w, 'where'), 'values': self._normalize_type(value, 'values')}
+            response_pe = self.response_in_DB(upd_pe)
+            response = response_pe
+        return response
+    
+    def _normalize_type(self, value:dict, option:str):
+        value_aux = []
+        for key in value.keys():
+            x = value[x]
+            correct = '[^a-zA-Z0-9-]'
+            if key in ['CPF', 'Telefone', 'CEP']:
+                correct = '[^0-9]+'
+            elif key == 'Nome':
+                correct = '[^a-zA-Z ]+'
+            elif key == 'Nascimento':
+                correct =  '[^0-9|-]+'
+            if value == 'values':
+                value_aux.append({'name': key, 'value': re.sub(correct, '', x)})
+            elif value == 'where':
+                value_aux.append({'name': key, 'operator': '=', 'value': re.sub(correct, '', x)})
+        print(value_aux)
+        return value_aux
     def response_in_DB(self, get:dict):
         data = json.dumps(get, indent=2).encode('utf-8')
         response = {}
