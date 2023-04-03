@@ -208,7 +208,7 @@ class DataBase:
                         value_Original['Response'] = (406, 'Integrity Error')
                     except pymysql.err.DataError as e:
                         conn.rollback()
-                        value_Original['Response'] = (406, e)
+                        value_Original['Response'] = (406, str(e))
                     conn.commit()
                     value_Original['Result'] = tuple(cursor.fetchall())
                 else:

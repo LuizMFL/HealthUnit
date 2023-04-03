@@ -9,7 +9,7 @@ class Server:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
         #self.socket.bind(('', 0))
         #print(self.socket.getsockname()[1])
-        self.server_address = ('localhost', 5555)
+        self.server_address = ('localhost', 5556)
         self.socket.bind(self.server_address)
         self.socket.listen(1)
         while True:
