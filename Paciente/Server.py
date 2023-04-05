@@ -28,7 +28,7 @@ class Server:
                     break
             finally:
                 # Clean up the connection
-                print(f'[x] Connection Close with Client -> {client_address}!')
+                print(f'[x] Closed Connection with Client -> {client_address}!')
                 connection.close()
                 
 if __name__ == '__main__':
