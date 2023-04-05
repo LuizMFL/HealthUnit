@@ -1,6 +1,6 @@
 import socket
 import sys
-from PacienteFunctions import *
+from Paciente.PacienteFunctions import *
 import json
 
 class Server:
