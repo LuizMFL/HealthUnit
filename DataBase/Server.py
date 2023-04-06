@@ -2,20 +2,18 @@ import socket
 import sys
 from DataBase.DataBaseFunctions import *
 import json
-import threading
+from threading import Thread
 
-class Server(threading.Thread):
+class Server:
     def __init__(self, servidores:dict) -> None:
         self.name_server = 'DB'
         self.servers_ip_port = dict(servidores)
         self.name_servidores = servidores.popitem()[0]
-        print(self.name_servidores)
         self.DB = DataBase()
-        
         self.__bind()
-        self.__send_ip_port_to_serverServidores()
+        Thread(target=self.__send_ip_port_to_serverServidores, args=(self,), daemon=True).start()
         self.server()
-    
+
     def server(self):
         while True:
             try:
@@ -36,7 +34,7 @@ class Server(threading.Thread):
                 else:
                     print(f'[-] {self.name_server}: Data None...')
                 # Clean up the connection
-                print(f'[x] {self.name_server}: Connection Close with Client -> {client_address}!')
+                print(f'[x] {self.name_server}: Closed Connection with Client -> {client_address}!')
                 connection.close()
             except Exception:
                 print(f'[!] {self.name_server}: Error to Accept...')
@@ -45,7 +43,7 @@ class Server(threading.Thread):
     def reconnect(self):
         print(f'[º] {self.name_server}: Reconnecting Server...')
         self.__bind()
-        self.__send_ip_port_to_serverServidores()
+        Thread(target=self.__send_ip_port_to_serverServidores, args=(self,), daemon=True).start()
         
     def __bind(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
@@ -54,26 +52,28 @@ class Server(threading.Thread):
         self.servers_ip_port[self.name_server] = self.socket.getsockname()
         print(f'[#] {self.name_server}: New ip_port -> {self.servers_ip_port[self.name_server]}')
         
-    def __send_ip_port_to_serverServidores(self):
+    def __send_ip_port_to_serverServidores(x, self):
         request = {'function': 'AtualizarServers', 'Request': {'name_server': self.name_server, 'values': [self.servers_ip_port[self.name_server]]}}
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
-        try:
-            print(f'[ ] {self.name_server}: Connecting with Server {self.name_servidores} -> {self.servers_ip_port[self.name_servidores]}...')
-            sock.connect(self.servers_ip_port[self.name_servidores])
-            print(f'[.] {self.name_server}: Connection accepted to Server {self.name_servidores}')
-            print(f'[+] {self.name_server}: Sending servers_ip_port to Server {self.name_servidores}')
-            data = json.dumps(request, indent=2).encode('utf-8')
-            sock.sendall(data)
-            print(f'[x] {self.name_server}: Closing connection with Server {self.name_servidores}')
-            sock.close()
-        except Exception:
-            print(f'[!] {self.name_server}: Error')
-            self.servers_ip_port.pop(self.name_servidores)
+        while True:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
+            sock.settimeout(10)
+            try:
+                print(f'[ ] {self.name_server}: Connecting with Server {self.name_servidores} -> {self.servers_ip_port[self.name_servidores]}...')
+                sock.connect(self.servers_ip_port[self.name_servidores])
+                print(f'[.] {self.name_server}: Connection accepted to Server {self.name_servidores}')
+                print(f'[+] {self.name_server}: Sending servers_ip_port to Server {self.name_servidores}')
+                data = json.dumps(request, indent=2).encode('utf-8')
+                sock.sendall(data)
+                print(f'[x] {self.name_server}: Closing connection with Server {self.name_servidores}')
+                sock.close()
+                break
+            except socket.timeout:
+                print(f'[!] {self.name_server}: Time out Error')
+
     
     def __new_servers_ip_port(self, value:dict):
         self.servers_ip_port = value['values'][0]
         print(f'[%] {self.name_server}: Updated servers_ip_port')
-        self.__send_ip_port_to_serverServidores(self)
     
 if __name__ == '__main__':
     server = Server()

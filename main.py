@@ -2,19 +2,32 @@ from DataBase.Server import Server as ServerDB
 #from Paciente.Server import Server as ServerPaciente
 import socket
 import json
-import threading
-
-class Servidores(threading.Thread):
+from threading import Thread
+import keyboard
+import sys
+import time
+class Servidores:
     def __init__(self) -> None:
         self.name_server = 'Servidores'
         self.servers_ip_port = {}
         self.__bind()
         self.__create_modules()
-        self.server()
+        Thread(target=self.server, args=(self,), daemon=True).start()
+        self.exit()
+        
+    def exit(self):
+        while True:  # making a loop
+            try:  # used try so that if user pressed other than the given key error will not be shown
+                if keyboard.is_pressed('q'):  # if key 'q' is pressed 
+                    print('You Pressed A Key!')
+                    sys.exit()
+            except:
+                break  # if user pressed a key other than the given key the loop will break
 
     def __create_modules(self):
-        thread.start_new_thread (ServerDB(self.servers_ip_port), self.servers_ip_port)
-        #ServerPaciente(self.servers_ip_port)
+        Thread(target=ServerDB, args=(self.servers_ip_port,), daemon=True).start()
+        #self.Paciente = ServerPaciente(self.servers_ip_port)
+        #Thread(target=self.Paciente.server, args=(self.Paciente,), daemon=True).start()
         #! self.Medico = ServerMedico(self.servers_ip_port)
         #! self.Recepcao = ServerRecepcao(self.servers_ip_port)
         #! self.GerenciamentoUnidade = ServerGerenciamentoUnidade(self.servers_ip_port)
@@ -34,10 +47,12 @@ class Servidores(threading.Thread):
         self.servers_ip_port[self.name_server] = self.socket.getsockname()
         print(f'[#] {self.name_server}: New ip_port -> {self.servers_ip_port[self.name_server]}')
         
-    def __send_servers_ip_port(self):
+    def __send_servers_ip_port(x, self):
+        print(f'[=] {self.name_server}: Sending servers_ip_port...')
         request = {'function': 'AtualizarServers', 'Request': {'values': [self.servers_ip_port]}}
         for key in self.servers_ip_port.keys():
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
+            sock.settimeout(20)
             try:
                 print(f'[ ] {self.name_server}: Connecting with Server {key} -> {self.servers_ip_port[key]}...')
                 sock.connect(self.servers_ip_port[key])
@@ -46,11 +61,12 @@ class Servidores(threading.Thread):
                 data = json.dumps(request, indent=2).encode('utf-8')
                 sock.sendall(data)
                 sock.close()
-            except Exception:
+            except Exception as e:
+                print(e)
                 print(f'[!] {self.name_server}: Error')
                 self.servers_ip_port.pop(key)
 
-    def server(self):
+    def server(x, self):
         while True:
             try:
                 print(f'[ ] {self.name_server}: Waiting for connection...')
@@ -71,9 +87,10 @@ class Servidores(threading.Thread):
                 self.reconnect()
     
     def __new_server_ip_port(self, value:dict):
-        self.servers_ip_port[value['name_server']] = value['values'][0]
+        self.servers_ip_port[value['name_server']] = tuple(value['values'][0])
         print(f'[%] {self.name_server}: Update server_ip_port {value["name_server"]} to {value["values"][0]}')
-        self.__send_servers_ip_port()
+        Thread(target=self.__send_servers_ip_port, args=(self,), daemon=True).start()
+        #self.__send_servers_ip_port()
 
 if __name__ == '__main__':
     Servidores()
