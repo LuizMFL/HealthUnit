@@ -8,7 +8,7 @@ class Server:
     def __init__(self, servidores:dict) -> None:
         self.name_server = 'DB'
         self.servers_ip_port = dict(servidores)
-        self.name_servidores = servidores.popitem()[0]
+        self.name_servidores = dict(servidores).popitem()[0]
         self.DB = DataBase()
         self.__bind()
         Thread(target=self.__send_ip_port_to_serverServidores, args=(self,), daemon=True).start()
@@ -53,7 +53,7 @@ class Server:
         print(f'[#] {self.name_server}: New ip_port -> {self.servers_ip_port[self.name_server]}')
         
     def __send_ip_port_to_serverServidores(x, self):
-        request = {'function': 'AtualizarServers', 'Request': {'name_server': self.name_server, 'values': [self.servers_ip_port[self.name_server]]}}
+        request = {'function': 'AtualizarServers', 'Request': {'name_server': str(self.name_server), 'values': [tuple(self.servers_ip_port[self.name_server])]}}
         while True:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
             sock.settimeout(10)
@@ -72,7 +72,7 @@ class Server:
 
     
     def __new_servers_ip_port(self, value:dict):
-        self.servers_ip_port = value['values'][0]
+        self.servers_ip_port = {x:tuple(value['values'][0][x]) for x in value['values'][0].keys()}
         print(f'[%] {self.name_server}: Updated servers_ip_port')
     
 if __name__ == '__main__':

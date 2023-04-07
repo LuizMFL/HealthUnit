@@ -9,6 +9,15 @@ class Paciente:
             'DB': ('localhost', 5556),
             'CS': ('localhost', 00000)
         }
+        self.functions = {
+            'Del_Paciente': self.del_paciente,
+            'Get_Paciente': self.get_paciente,
+            'Cadastro_Paciente': self.cadastro_pa,
+            'Update_Pe': self.update_pe,
+            'Get_Consultas_Realizadas': self.response_in_CS,
+            'Get_Consultas_Reservadas': self.response_in_CS,
+            'Reservar_Consulta': self.response_in_CS
+        }
 
     def del_paciente(self, cpf:str):
         response = {'Response': (406, 'Failed')}
@@ -36,7 +45,12 @@ class Paciente:
                         response['Results']['Result'][0][key] = response_pe['Results']['Result'][0][key]
                     response['Results']['Result'][0]['ID'] = id_pa
         return response
-    
+    def get_consultas_realizadas(self, cpf):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        response_get_pa =  self.get_paciente(cpf)
+        if response_get_pa['Response'][0] == 200 and len(response_get_pa['Results']['Result']):
+            id_pa = response_get_pa['Results']['Result'][0]['ID']
+        
     def get_consultas_realizadas(self, cpf:str):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         response_get_pa =  self.get_paciente(cpf)

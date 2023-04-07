@@ -1,5 +1,5 @@
 from DataBase.Server import Server as ServerDB
-#from Paciente.Server import Server as ServerPaciente
+from Paciente.Server import Server as ServerPaciente
 import socket
 import json
 from threading import Thread
@@ -25,7 +25,8 @@ class Servidores:
                 break  # if user pressed a key other than the given key the loop will break
 
     def __create_modules(self):
-        Thread(target=ServerDB, args=(self.servers_ip_port,), daemon=True).start()
+        Thread(target=ServerDB, args=(dict(self.servers_ip_port),), daemon=True).start()
+        Thread(target=ServerPaciente, args=(dict(self.servers_ip_port),), daemon=True).start()
         #self.Paciente = ServerPaciente(self.servers_ip_port)
         #Thread(target=self.Paciente.server, args=(self.Paciente,), daemon=True).start()
         #! self.Medico = ServerMedico(self.servers_ip_port)
@@ -49,22 +50,22 @@ class Servidores:
         
     def __send_servers_ip_port(x, self):
         print(f'[=] {self.name_server}: Sending servers_ip_port...')
-        request = {'function': 'AtualizarServers', 'Request': {'values': [self.servers_ip_port]}}
+        request = {'function': 'AtualizarServers', 'Request': {'values': [dict(self.servers_ip_port)]}}
         for key in self.servers_ip_port.keys():
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
-            sock.settimeout(20)
-            try:
-                print(f'[ ] {self.name_server}: Connecting with Server {key} -> {self.servers_ip_port[key]}...')
-                sock.connect(self.servers_ip_port[key])
-                print(f'[.] {self.name_server}: Connection accepted to Server {key}')
-                print(f'[+] {self.name_server}: Sending servers_ip_port to Server {key}')
-                data = json.dumps(request, indent=2).encode('utf-8')
-                sock.sendall(data)
-                sock.close()
-            except Exception as e:
-                print(e)
-                print(f'[!] {self.name_server}: Error')
-                self.servers_ip_port.pop(key)
+            if not key == self.name_server:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
+                sock.settimeout(20)
+                try:
+                    print(f'[ ] {self.name_server}: Connecting with Server {key} -> {self.servers_ip_port[key]}...')
+                    sock.connect(self.servers_ip_port[key])
+                    print(f'[.] {self.name_server}: Connection accepted to Server {key}')
+                    print(f'[+] {self.name_server}: Sending servers_ip_port to Server {key}')
+                    data = json.dumps(request, indent=2).encode('utf-8')
+                    sock.sendall(data)
+                    sock.close()
+                except Exception as e:
+                    print(f'[!] {self.name_server}: Error -> {e}')
+                    self.servers_ip_port.pop(key)
 
     def server(x, self):
         while True:
@@ -90,7 +91,6 @@ class Servidores:
         self.servers_ip_port[value['name_server']] = tuple(value['values'][0])
         print(f'[%] {self.name_server}: Update server_ip_port {value["name_server"]} to {value["values"][0]}')
         Thread(target=self.__send_servers_ip_port, args=(self,), daemon=True).start()
-        #self.__send_servers_ip_port()
 
 if __name__ == '__main__':
     Servidores()
