@@ -27,7 +27,10 @@ class Server:
                     if data['function'] == 'AtualizarServers' and 'Request' in data.keys():
                         self.__new_servers_ip_port(data['Request'])
                     else:
+                        print(data)
+                        data['Servidores'] = dict(self.servers_ip_port)
                         data = self.PC.Select_function(data)
+                        data.pop('Servidores')
                         data = json.dumps(data, indent=2).encode('utf-8')
                         print(f'[+] {self.name_server}: Send Result to client...')
                         connection.sendall(data)
