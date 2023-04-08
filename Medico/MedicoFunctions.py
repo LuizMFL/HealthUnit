@@ -3,27 +3,25 @@ import json
 import re
 from contextlib import contextmanager
 
-class Paciente:
+class Medico:
     def __init__(self) -> None:
         self.server = {}
         self.functions = {
-            'Del_Paciente': self.del_paciente,
-            'Get_Paciente': self.get_paciente,
-            'Cadastro_Paciente': self.cadastro_pa,
+            'Del_Medico': self.del_medico,
+            'Get_Medico': self.get_medico,
+            'Cadastro_Medico': self.cadastro_md,
             'Update_Pe': self.update_pe,
-            'Get_Consultas_Disponiveis': self.response_in_CS,
+            'Get_Calendario_Medico': self.get_calendario_medico,
             'Get_Consultas_Realizadas': self.response_in_CS,
             'Get_Consultas_Reservadas': self.response_in_CS,
             'Reservar_Consulta': self.response_in_CS,
-            'Del_Consulta_Reservada': self.response_in_CS,
-            'Insert_Avaliacao_Profissional': self.insert_avaliacao_profissional,
-            'Del_Avaliacao_Profissional': self.del_avaliacao_profissional,
-            'Insert_Avaliacao_Unidade': self.insert_avaliacao_unidade,
-            'Del_Avaliacao_Unidade': self.del_avaliacao_unidade,
-            'Insert_Doenca_Paciente': self.insert_doenca_paciente,
-            'Del_Doenca_Paciente': self.del_doenca_paciente,
-            'Get_Receita': self.get_receita,
-            'Get_Receita': self.get_receita_remedio
+            'Get_Avaliacoes': self.get_avaliacoes,
+            'Insert_Especializacao': self.insert_especializacao,
+            'Del_Especializacao': self.del_especializacao,
+            'Get_Doenca_Remedio': self.get_remedio,
+            'Get_Remedio_Estoque': self.get_remedio_estoque,
+            'Create_Receita': self.insert_receita,
+            'Create_Receita_Remedio': self.insert_receita_remedio,
         }
         
     def Select_function(self, value:dict):
@@ -42,36 +40,38 @@ class Paciente:
                 value = {'Response': (406, 'Data Type Error'), 'Result': ()}
         return value
     
-    def del_paciente(self, value:dict):
+    def del_medico(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         if 'CPF' in value.keys() and isinstance(value['CPF'], str):
             cpf = value['CPF']
-            response_get_pa =  self.get_paciente({'CPF': cpf})
-            if response_get_pa['Response'][0] == 200 and len(response_get_pa['Results']['Result']):
+            response_get_md =  self.get_medico({'CPF': cpf})
+            if response_get_md['Response'][0] == 200 and len(response_get_md['Results']['Result']):
                 del_pe = {'function': 'Delete','table_name': 'pessoa', 'where': self._normalize_type({'CPF': cpf}, 'where')}
-                del_pa = {'function': 'Delete','table_name': 'paciente', 'where': self._normalize_type({'ID_Pessoa': response_get_pa['Results']['Result'][0]['ID']}, 'where')}
-                response = self.response_in_server(del_pa)
+                del_md = {'function': 'Delete','table_name': 'medico', 'where': self._normalize_type({'ID_Pessoa': response_get_md['Results']['Result'][0]['ID']}, 'where')}
+                response = self.response_in_server(del_md)
                 self.response_in_server(del_pe)
         return response
     
 
-    def get_paciente(self, value:dict):
+    def get_medico(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         if 'CPF' in value.keys() and isinstance(value['CPF'], str):
             cpf = value['CPF']
             if len(cpf) == 11:
                 response_pe = self._get_pessoa(cpf)
-                response = response_pe
                 if response_pe['Response'][0] == 200 and len(response_pe['Results']['Result']):
                     id_pe = response_pe['Results']['Result'][0]['ID']
-                    get_pa = {'function': 'Select','table_name': 'paciente', 'where': self._normalize_type({'ID_Pessoa': id_pe}, 'where')}
-                    response_pa = self.response_in_server(get_pa)
-                    response = response_pa
-                    if len(response_pa['Results']['Result']):
-                        id_pa = response_pa['Results']['Result'][0].pop('ID')
-                        for key in response_pe['Results']['Result'][0].keys():
-                            response['Results']['Result'][0][key] = response_pe['Results']['Result'][0][key]
-                        response['Results']['Result'][0]['ID'] = id_pa
+                    response_pr = self._get_profissional(id_pe)
+                    if response_pr['Response'][0] == 200 and len(response_pr['Results']['Result']):
+                        id_pr = response_pe['Results']['Result'][0]['ID_Pessoa']
+                        get_md = {'function': 'Select','table_name': 'medico', 'where': self._normalize_type({'ID_Profissional': id_pr}, 'where')}
+                        response_md = self.response_in_server(get_md)
+                        response = response_md
+                        if len(response_md['Results']['Result']):
+                            id_md = response_md['Results']['Result'][0].pop('ID')
+                            for key in response_pe['Results']['Result'][0].keys():
+                                response['Results']['Result'][0][key] = response_pe['Results']['Result'][0][key]
+                            response['Results']['Result'][0]['ID'] = id_md
         return response
     
     def _get_pessoa(self, cpf:str):
@@ -79,32 +79,29 @@ class Paciente:
         response = self.response_in_server(get_pe)
         return response
     
-    def reservar_consulta(self, value:dict):
-        response = {'Response': (406, 'Failed')}
-        if 'ID_Paciente' in value.keys() and value['ID_Paciente'] > 0 and 'ID_Consulta' in value.keys() and value['ID_Consulta'] > 0:
-            response_set_con_to_reservada = self.response_in_server({'function': 'Reservar', 'values': {'ID_Paciente': value['ID_Paciente'], 'ID_Consulta': value['ID_Consulta']}}, 'CS')
-            response = response_set_con_to_reservada
+    def _get_profissional(self, id_pessoa:int):
+        get_pr = {'function': 'Select','table_name': 'profissional', 'where': self._normalize_type({'ID_Pessoa': id_pessoa}, 'where')}
+        response = self.response_in_server(get_pr)
         return response
     
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-    def response_in_CS(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID' in value.keys() and isinstance(value['ID'], int):
-            id = value['ID']
-        return response
-    
-    def cadastro_pa(self, value:dict):
+    def cadastro_md(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         if 'CPF' in value.keys() and isinstance(value['CPF'], str) and len(value['CPF']) == 11:
             response_pe = self._cadastro_pe(value)
-            response = response_pe
-            if response_pe['Results']['Response'][0] == 200:
+            if response_pe['Results']['Response'][0] == 200 and len(response_pe['Results']['Result']):
                 id_pessoa = self._get_pessoa(value['CPF'])['Results']['Result'][0]['ID']
-                set_pa = {'function': 'Insert', 'table_name': 'paciente', 'values': self._normalize_type({'ID_Pessoa': id_pessoa}, 'values')}
-                response_pa = self.response_in_server(set_pa)
-                response = response_pa
+                self._cadastro_pr({'ID_Pessoa': id_pessoa})
+                id_profissional = self._get_profissional(id_pessoa)
+                set_md = {'function': 'Insert', 'table_name': 'medico', 'values': self._normalize_type({'ID_Profissional': id_profissional}, 'values')}
+                response_md = self.response_in_server(set_md)
+                response = response_md
         return response
 
+    def _cadastro_pr(self, value:dict):
+        set_pr = {'function': 'Insert', 'table_name': 'profissional', 'values': self._normalize_type(value, 'values')}
+        response_pr = self.response_in_server(set_pr)
+        return response_pr
+    
     def _cadastro_pe(self, value:dict):
         set_pe = {'function': 'Insert', 'table_name': 'pessoa', 'values': self._normalize_type(value, 'values')}
         response_pe = self.response_in_server(set_pe)
@@ -178,22 +175,22 @@ class Paciente:
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         if 'CPF' in value.keys() and isinstance(value['CPF'], str):
             cpf = value['CPF']
-            response_get_pa =  self.get_paciente(cpf)
-            if response_get_pa['Response'][0] == 200 and len(response_get_pa['Results']['Result']):
-                id_pa = response_get_pa['Results']['Result'][0]['ID']
+            response_get_md =  self.get_medico(cpf)
+            if response_get_md['Response'][0] == 200 and len(response_get_md['Results']['Result']):
+                id_md = response_get_md['Results']['Result'][0]['ID']
             
     def get_consultas_realizadas(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         if 'CPF' in value.keys() and isinstance(value['CPF'], str):
             cpf = value['CPF']
-            response_get_pa =  self.get_paciente(cpf)
-            if response_get_pa['Response'][0] == 200 and len(response_get_pa['Results']['Result']):
-                id_pa = response_get_pa['Results']['Result'][0]['ID']
-                get_con_pa = {'function': 'Select','table_name': 'consulta_paciente_reservada', 'where': self._normalize_type({'ID_Paciente': id_pa}, 'where')}
-                response_get_con_pa = self.response_in_server(get_con_pa)
+            response_get_md =  self.get_medico(cpf)
+            if response_get_md['Response'][0] == 200 and len(response_get_md['Results']['Result']):
+                id_md = response_get_md['Results']['Result'][0]['ID']
+                get_con_md = {'function': 'Select','table_name': 'consulta_medico_reservada', 'where': self._normalize_type({'ID_Medico': id_md}, 'where')}
+                response_get_con_md = self.response_in_server(get_con_md)
                 response = {'Response': (200, 'Success!'), 'Results':{'Result': []}}
-                for consulta_pa in response_get_con_pa['Results']['Result']:
-                    id_con = consulta_pa['ID_Consulta']
+                for consulta_md in response_get_con_md['Results']['Result']:
+                    id_con = consulta_md['ID_Consulta']
                     get_con = {'function': 'Select','table_name': 'consulta', 'where': self._normalize_type({'ID': id_con}, 'where')}
                     response_get_con = self.response_in_server(get_con)
                     if response_get_con['Response'][0] == 200 and len(response_get_con['Results']['Result']):
@@ -205,10 +202,10 @@ class Paciente:
 
 
 if __name__ == '__main__':
-    p = Paciente()
-    a = p.cadastro_pa({'CPF': '10154389450', 'Nome': 'Francisco', 'Telefone': '81999932153', 'Email': 'luis.sda.3dqda@gmail.com', 'CEP': '51394123', 'Complem_Endereco': 'dasdadaNADa','Idade': 1, 'Genero': 'H', 'Nascimento': '15-03-2001'})
+    p = Medico()
+    a = p.cadastro_md({'CPF': '10154389450', 'Nome': 'Francisco', 'Telefone': '81999932153', 'Email': 'luis.sda.3dqda@gmail.com', 'CEP': '51394123', 'Complem_Endereco': 'dasdadaNADa','Idade': 1, 'Genero': 'H', 'Nascimento': '15-03-2001'})
     print(a)
-    b = p.get_paciente({'CPF':'10154389450'})
+    b = p.get_medico({'CPF':'10154389450'})
     print(b)
     c = p.get_consultas_realizadas({'CPF':'10154389450'})
     print(c)

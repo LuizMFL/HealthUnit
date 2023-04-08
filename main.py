@@ -1,5 +1,10 @@
 from DataBase.Server import Server as ServerDB
 from Paciente.Server import Server as ServerPaciente
+from Farmacia.Server import Server as ServerFarmacia
+from GerenciamentoUnidade.Server import Server as ServerGerenciador
+from Medico.Server import Server as ServerMedico
+from Recepcao.Server import Server as ServerRecepcionista
+
 import socket
 import json
 from threading import Thread
@@ -27,6 +32,10 @@ class Servidores:
     def __create_modules(self):
         Thread(target=ServerDB, args=(dict(self.servers_ip_port),), daemon=True).start()
         Thread(target=ServerPaciente, args=(dict(self.servers_ip_port),), daemon=True).start()
+        Thread(target=ServerFarmacia, args=(dict(self.servers_ip_port),), daemon=True).start()
+        Thread(target=ServerGerenciador, args=(dict(self.servers_ip_port),), daemon=True).start()
+        Thread(target=ServerMedico, args=(dict(self.servers_ip_port),), daemon=True).start()
+        Thread(target=ServerRecepcionista, args=(dict(self.servers_ip_port),), daemon=True).start()
         #self.Paciente = ServerPaciente(self.servers_ip_port)
         #Thread(target=self.Paciente.server, args=(self.Paciente,), daemon=True).start()
         #! self.Medico = ServerMedico(self.servers_ip_port)
@@ -51,7 +60,7 @@ class Servidores:
     def __send_servers_ip_port(x, self):
         print(f'[=] {self.name_server}: Sending servers_ip_port...')
         request = {'function': 'AtualizarServers', 'Request': {'values': [dict(self.servers_ip_port)]}}
-        for key in self.servers_ip_port.keys():
+        for key in dict(self.servers_ip_port).keys():
             if not key == self.name_server:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
                 sock.settimeout(20)
