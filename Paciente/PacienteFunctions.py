@@ -42,6 +42,76 @@ class Paciente:
                 value = {'Response': (406, 'Data Type Error'), 'Result': ()}
         return value
     
+    def insert_avaliacao_profissional(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Profissional' in value.keys() and isinstance(value['ID_Profissional'], int) and 'Nota' in value.keys() and isinstance(value['Nota'], int) and 0 <= value['Nota'] <= 100:
+            values= {
+                'ID_Paciente': value['ID_Paciente'],
+                'ID_Profissional': value['ID_Profissional'],
+                'Nota': value['Nota']
+            }
+            if 'Descricao' in value.keys() and isinstance(value['Descricao'], str):
+                values['Descricao'] = value['Descricao']
+            set_aval = {'function': 'Insert', 'table_name': 'avaliacao_profissional', 'values': self._normalize_type(values, 'values')}
+            response = self.response_in_server(set_aval)
+        return response
+
+    def del_avaliacao_profissional(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Profissional' in value.keys() and isinstance(value['ID_Profissional'], int):
+            values= {
+                'ID_Paciente': value['ID_Paciente'],
+                'ID_Profissional': value['ID_Profissional']
+            }
+            del_aval = {'function': 'Delete','table_name': 'avaliacao_profissional', 'where': self._normalize_type(values, 'where')}
+            response = self.response_in_server(del_aval)
+        return response
+
+    def insert_avaliacao_unidade(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'Nota' in value.keys() and isinstance(value['Nota'], int) and 0 <= value['Nota'] <= 100:
+            values= {
+                'ID_Paciente': value['ID_Paciente'],
+                'Nota': value['Nota']
+            }
+            if 'Descricao' in value.keys() and isinstance(value['Descricao'], str):
+                values['Descricao'] = value['Descricao']
+            set_aval = {'function': 'Insert', 'table_name': 'avaliacao_unidade', 'values': self._normalize_type(values, 'values')}
+            response = self.response_in_server(set_aval)
+        return response
+    
+    def del_avaliacao_unidade(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int):
+            values= {
+                'ID_Paciente': value['ID_Paciente']
+            }
+            del_aval = {'function': 'Delete','table_name': 'avaliacao_unidade', 'where': self._normalize_type(values, 'where')}
+            response = self.response_in_server(del_aval)
+        return response
+    
+    def insert_doenca_paciente(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Doenca' in value.keys() and isinstance(value['ID_Doenca'], int):
+            values= {
+                'ID_Paciente': value['ID_Paciente'],
+                'ID_Doenca': value['ID_Doenca']
+            }
+            set_do_pa = {'function': 'Insert', 'table_name': 'doenca_paciente', 'values': self._normalize_type(values, 'values')}
+            response = self.response_in_server(set_do_pa)
+        return response
+    
+    def del_doenca_paciente(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Doenca' in value.keys() and isinstance(value['ID_Doenca'], int):
+            values= {
+                'ID_Paciente': value['ID_Paciente'],
+                'ID_Doenca': value['ID_Doenca']
+            }
+            del_do_pa = {'function': 'Delete','table_name': 'doenca_paciente', 'where': self._normalize_type(values, 'where')}
+            response = self.response_in_server(del_do_pa)
+        return response
+    
     def del_paciente(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         if 'CPF' in value.keys() and isinstance(value['CPF'], str):
