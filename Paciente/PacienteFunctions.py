@@ -190,7 +190,6 @@ class Paciente:
                 response = self.response_in_server(del_pa)
                 self.response_in_server(del_pe)
         return response
-    
 
     def get_paciente(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
@@ -263,7 +262,6 @@ class Paciente:
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         if 'CPF' in value.keys() and isinstance(value['CPF'], str) and len(value['CPF']) == 11:
             response_pe = self._cadastro_pe(value)
-            response = response_pe
             if response_pe['Results']['Response'][0] == 200:
                 id_pessoa = self._get_pessoa(value['CPF'])['Results']['Result'][0]['ID']
                 set_pa = {'function': 'Insert', 'table_name': 'paciente', 'values': self._normalize_type({'ID_Pessoa': id_pessoa}, 'values')}
@@ -368,13 +366,3 @@ class Paciente:
                         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
                         break
         return response
-
-
-if __name__ == '__main__':
-    p = Paciente()
-    a = p.cadastro_pa({'CPF': '10154389450', 'Nome': 'Francisco', 'Telefone': '81999932153', 'Email': 'luis.sda.3dqda@gmail.com', 'CEP': '51394123', 'Complem_Endereco': 'dasdadaNADa','Idade': 1, 'Genero': 'H', 'Nascimento': '15-03-2001'})
-    print(a)
-    b = p.get_paciente({'CPF':'10154389450'})
-    print(b)
-    c = p.get_consultas_realizadas({'CPF':'10154389450'})
-    print(c)

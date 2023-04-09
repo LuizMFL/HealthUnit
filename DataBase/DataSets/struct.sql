@@ -8,7 +8,6 @@ Telefone CHAR(11) NOT NULL,
 Email VARCHAR(200) NOT NULL,
 CEP CHAR(8) NOT NULL,
 Complem_Endereco VARCHAR(200) NOT NULL,
-Idade TINYINT UNSIGNED NOT NULL,
 Genero ENUM('H','M','G','T', 'L'),
 Nascimento DATE NOT NULL,
 CONSTRAINT PK_Pessoa PRIMARY KEY (ID)
@@ -126,7 +125,7 @@ ID SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
 Data_Calendar DATE NOT NULL UNIQUE,
 Dia_Semana ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
 CONSTRAINT PK_Calendario PRIMARY KEY (ID),
-CONSTRAINT AK_Calendario UNIQUE(ID_Calendario)
+CONSTRAINT AK_Calendario UNIQUE(Data_Calendar)
 );
 
 CREATE TABLE IF NOT EXISTS calendario_especializacao_medico (

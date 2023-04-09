@@ -45,12 +45,13 @@ class Consulta:
             response = response_calen
         return response
     
+    #!
     def _insert_calendario(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'Data_Calendar' in value.keys() and isinstance(value['Data_Calendar'], str) and 'Feriado' in value.keys() and isinstance(value['Feriadp'], bool):
+        if 'Data_Calendar' in value.keys() and isinstance(value['Data_Calendar'], str):
             data_atual = datetime.today().date()
             try:
-                data = datetime.strptime(value['Data_Calendar'], '%d-%m-%Y').date()
+                data = datetime.strptime(value['Data_Calendar'], '%d/%m/%Y').date()
                 if data >= data_atual:
                     weekday = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
                     values = {
@@ -62,236 +63,40 @@ class Consulta:
             except Exception:
                 pass
         return response
-
+    #!
     def insert_calendario_especializacao_medico(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        response_calen = self._insert_calendario(value)
+        if response_calen['Response'] == 200:
+            data_atual = datetime.today().date()
+            try:
+                data = datetime.strptime(value['Data_Calendar'], '%d/%m/%Y').date()
+                if data >= data_atual:
+                    weekday = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                    values = {
+                        'Data_Calendar': value['Data_Calendar'],
+                        'Dia_Semana': weekday[data.weekday()]
+                    }
+                    set_calen = {'function': 'Insert', 'table_name': 'calendario', 'values': self._normalize_type(values, 'values')}
+                    response = self.response_in_server(set_calen)
+            except Exception:
+                pass
         return response
-    def get_avaliacao_profissional(self, value:dict):
+    
+    def get_consultas_disponiveis(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Profissional' in value.keys() and isinstance(value['ID_Profissional', int]):
-            values = {
-            'ID_Paciente': value['ID_Paciente'],
-            'ID_Profissional': value['ID_Profissional']
-            }
-            get_aval = {'function': 'Select','table_name': 'avaliacao_profissional', 'where': self._normalize_type(values, 'where')}
-            response = self.response_in_server(get_aval)
-        return response
+        values = {'Atual':True}
+        response_calen_atual = self.get_calendarios(values)
 
-    def update_avaliacao_profissional(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Profissional' in value.keys() and isinstance(value['ID_Profissional', int]) and 'Nota' in value.keys() and isinstance(value['Nota'], int) and 0 <= value['Nota'] <= 100:
-            values_w = {
-                'ID_Paciente': value['ID_Paciente'],
-                'ID_Profissional': value['ID_Profissional']
-            }
-            values_u = {
-                'Nota': value['Nota']
-            }
-            if 'Descricao' in value.keys() and isinstance(value['Descricao'], str):
-                values_u['Descricao'] = value['Descricao']
-            upd_aval = {'function': 'Update','table_name': 'avaliacao_profissional', 'where': self._normalize_type(values_w, 'where'), 'values': self._normalize_type(values_u, 'values')}
-            response = self.response_in_server(upd_aval)
-        return response
-    
-    def del_avaliacao_profissional(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Profissional' in value.keys() and isinstance(value['ID_Profissional'], int):
-            values= {
-                'ID_Paciente': value['ID_Paciente'],
-                'ID_Profissional': value['ID_Profissional']
-            }
-            del_aval = {'function': 'Delete','table_name': 'avaliacao_profissional', 'where': self._normalize_type(values, 'where')}
-            response = self.response_in_server(del_aval)
-        return response
-
-    def insert_avaliacao_unidade(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'Nota' in value.keys() and isinstance(value['Nota'], int) and 0 <= value['Nota'] <= 100:
-            values= {
-                'ID_Paciente': value['ID_Paciente'],
-                'Nota': value['Nota']
-            }
-            if 'Descricao' in value.keys() and isinstance(value['Descricao'], str):
-                values['Descricao'] = value['Descricao']
-            set_aval = {'function': 'Insert', 'table_name': 'avaliacao_unidade', 'values': self._normalize_type(values, 'values')}
-            response = self.response_in_server(set_aval)
-        return response
-    def get_avaliacao_unidade(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int):
-            values = {
-            'ID_Paciente': value['ID_Paciente']
-            }
-            get_aval = {'function': 'Select','table_name': 'avaliacao_unidade', 'where': self._normalize_type(values, 'where')}
-            response = self.response_in_server(get_aval)
-        return response
-
-    def update_avaliacao_unidade(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'Nota' in value.keys() and isinstance(value['Nota'], int) and 0 <= value['Nota'] <= 100:
-            values_w = {
-                'ID_Paciente': value['ID_Paciente']
-            }
-            values_u = {
-                'Nota': value['Nota']
-            }
-            if 'Descricao' in value.keys() and isinstance(value['Descricao'], str):
-                values_u['Descricao'] = value['Descricao']
-            upd_aval = {'function': 'Update','table_name': 'avaliacao_unidade', 'where': self._normalize_type(values_w, 'where'), 'values': self._normalize_type(values_u, 'values')}
-            response = self.response_in_server(upd_aval)
-        return response
-    
-    def del_avaliacao_unidade(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int):
-            values= {
-                'ID_Paciente': value['ID_Paciente']
-            }
-            del_aval = {'function': 'Delete','table_name': 'avaliacao_unidade', 'where': self._normalize_type(values, 'where')}
-            response = self.response_in_server(del_aval)
-        return response
-    
-    def insert_doenca_paciente(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Doenca' in value.keys() and isinstance(value['ID_Doenca'], int):
-            values= {
-                'ID_Paciente': value['ID_Paciente'],
-                'ID_Doenca': value['ID_Doenca']
-            }
-            set_do_pa = {'function': 'Insert', 'table_name': 'doenca_paciente', 'values': self._normalize_type(values, 'values')}
-            response = self.response_in_server(set_do_pa)
-        return response
-    
-    def get_doenca_paciente(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int):
-            values = {
-                'ID_Paciente': value['ID_Paciente']
-            }
-            get_doe_pa = {'function': 'Select','table_name': 'doenca_paciente', 'where': self._normalize_type(values, 'where')}
-            response = self.response_in_server(get_doe_pa)
-        return response
-    
-    def del_doenca_paciente(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Doenca' in value.keys() and isinstance(value['ID_Doenca'], int):
-            values= {
-                'ID_Paciente': value['ID_Paciente'],
-                'ID_Doenca': value['ID_Doenca']
-            }
-            del_do_pa = {'function': 'Delete','table_name': 'doenca_paciente', 'where': self._normalize_type(values, 'where')}
-            response = self.response_in_server(del_do_pa)
-        return response
-    
-    def del_paciente(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'CPF' in value.keys() and isinstance(value['CPF'], str):
-            cpf = value['CPF']
-            response_get_pa =  self.get_paciente({'CPF': cpf})
-            if response_get_pa['Response'][0] == 200 and len(response_get_pa['Results']['Result']):
-                del_pe = {'function': 'Delete','table_name': 'pessoa', 'where': self._normalize_type({'CPF': cpf}, 'where')}
-                del_pa = {'function': 'Delete','table_name': 'paciente', 'where': self._normalize_type({'ID_Pessoa': response_get_pa['Results']['Result'][0]['ID']}, 'where')}
-                response = self.response_in_server(del_pa)
-                self.response_in_server(del_pe)
-        return response
-    
-
-    def get_paciente(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'CPF' in value.keys() and isinstance(value['CPF'], str):
-            cpf = value['CPF']
-            if len(cpf) == 11:
-                response_pe = self._get_pessoa(cpf)
-                response = response_pe
-                if response_pe['Response'][0] == 200 and len(response_pe['Results']['Result']):
-                    id_pe = response_pe['Results']['Result'][0]['ID']
-                    get_pa = {'function': 'Select','table_name': 'paciente', 'where': self._normalize_type({'ID_Pessoa': id_pe}, 'where')}
-                    response_pa = self.response_in_server(get_pa)
-                    response = response_pa
-                    if len(response_pa['Results']['Result']):
-                        id_pa = response_pa['Results']['Result'][0].pop('ID')
-                        for key in response_pe['Results']['Result'][0].keys():
-                            response['Results']['Result'][0][key] = response_pe['Results']['Result'][0][key]
-                        response['Results']['Result'][0]['ID'] = id_pa
-        return response
-    
-    def _get_pessoa(self, cpf:str):
-        get_pe = {'function': 'Select','table_name': 'pessoa', 'where': self._normalize_type({'CPF': cpf}, 'where')}
-        response = self.response_in_server(get_pe)
-        return response
-    
-    def get_receitas(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int):
-            values = {
-                'ID_Paciente': value['ID_Paciente']
-            }
-            get_rec = {'function': 'Select','table_name': 'receita', 'where': self._normalize_type(values, 'where')}
-            response_rec = self.response_in_server(get_rec)
-            for n, receita in enumerate(response_rec['Results']['Result']):
-                values = {
-                    'ID_Receita': receita['ID']
-                }
-                response_rec_rem = self.get_receita_remedio(value)
-                if response_rec_rem['Response'] == 200:
-                    remedios = [{'ID_Remedio': x['ID_Remedio'], 'Quantidade': x['Quantidade'], 'Retirada': x['Retirada']} for x in response_rec_rem['Results']['Result']]
-                    response_rec_rem['Results']['Result'][n]['Remedios'] = remedios
-        return response
-    
-    def get_receita_remedio(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Receita' in value.keys() and isinstance(value['ID_Receita'], int):
-            values = {
-                'ID_Receita': values['ID_Receita']
-            }
-            get_rec_rem = {'function': 'Select','table_name': 'receita_remedio', 'where': self._normalize_type(values, 'where')}
-            response_rec_rem = self.response_in_server(get_rec_rem)
-            response = response_rec_rem
-        return response
-
-    def reservar_consulta(self, value:dict):
-        response = {'Response': (406, 'Failed')}
-        if 'ID_Paciente' in value.keys() and value['ID_Paciente'] > 0 and 'ID_Consulta' in value.keys() and value['ID_Consulta'] > 0:
-            response_set_con_to_reservada = self.response_in_server({'function': 'Reservar', 'values': {'ID_Paciente': value['ID_Paciente'], 'ID_Consulta': value['ID_Consulta']}}, 'CS')
-            response = response_set_con_to_reservada
-        return response
-    
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-    def response_in_CS(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID' in value.keys() and isinstance(value['ID'], int):
-            id = value['ID']
-        return response
-    
-    def cadastro_pa(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'CPF' in value.keys() and isinstance(value['CPF'], str) and len(value['CPF']) == 11:
-            response_pe = self._cadastro_pe(value)
-            response = response_pe
-            if response_pe['Results']['Response'][0] == 200:
-                id_pessoa = self._get_pessoa(value['CPF'])['Results']['Result'][0]['ID']
-                set_pa = {'function': 'Insert', 'table_name': 'paciente', 'values': self._normalize_type({'ID_Pessoa': id_pessoa}, 'values')}
-                response_pa = self.response_in_server(set_pa)
-                response = response_pa
-        return response
-
-    def _cadastro_pe(self, value:dict):
-        set_pe = {'function': 'Insert', 'table_name': 'pessoa', 'values': self._normalize_type(value, 'values')}
-        response_pe = self.response_in_server(set_pe)
-        return response_pe
-    
-    def update_pe(self, value:dict): 
-        value_w = {}
-        if 'CPF' in value.keys():
-            value_w['CPF'] = value.pop('CPF')
-        if 'ID' in value.keys():
-            value_w['ID'] = value.pop('CPF')
-        response = {'Response': (406, 'Failed')}
-        if value_w.keys():
-            upd_pe = {'function': 'Update', 'table_name': 'pessoa', 'where': self._normalize_type(value_w, 'where'), 'values': self._normalize_type(value, 'values')}
-            response_pe = self.response_in_server(upd_pe)
-            response = response_pe
-        return response
+    def _get_consultas(self):
+        get_cons = {'function': 'Select', 'table_name': 'consulta', 'where': []}
+        response_cons = self.response_in_server(get_cons)
+        self.get_calendarios()
+        for consu in response_cons['Results']['Result']:
+            get_calen = {'function': 'Select', 'table_name': 'calendario', 'where': []}
+            
+    def _atualizar_consultas_disponiveis(self):
+        pass
     
     def _normalize_type(self, value:dict, option:str):
         value_aux = []
@@ -299,7 +104,7 @@ class Consulta:
         for key in value.keys():
             x = value[key]
             if isinstance(x, str):
-                correct = '[^a-zA-Z0-9-]'
+                correct = '[^a-zA-Z0-9]'
                 if key in ['CPF', 'Telefone', 'CEP']:
                     correct = '[^0-9]+'
                 elif key == 'Dia_Semana':
