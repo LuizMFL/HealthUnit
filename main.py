@@ -4,13 +4,13 @@ from Farmacia.Server import Server as ServerFarmacia
 from GerenciamentoUnidade.Server import Server as ServerGerenciador
 from Medico.Server import Server as ServerMedico
 from Recepcao.Server import Server as ServerRecepcionista
-
+from Consulta.Server import Server as ServerConsulta
 import socket
 import json
 from threading import Thread
 import keyboard
 import sys
-import time
+
 class Servidores:
     def __init__(self) -> None:
         self.name_server = 'Servidores'
@@ -36,13 +36,7 @@ class Servidores:
         Thread(target=ServerGerenciador, args=(dict(self.servers_ip_port),), daemon=True).start()
         Thread(target=ServerMedico, args=(dict(self.servers_ip_port),), daemon=True).start()
         Thread(target=ServerRecepcionista, args=(dict(self.servers_ip_port),), daemon=True).start()
-        #self.Paciente = ServerPaciente(self.servers_ip_port)
-        #Thread(target=self.Paciente.server, args=(self.Paciente,), daemon=True).start()
-        #! self.Medico = ServerMedico(self.servers_ip_port)
-        #! self.Recepcao = ServerRecepcao(self.servers_ip_port)
-        #! self.GerenciamentoUnidade = ServerGerenciamentoUnidade(self.servers_ip_port)
-        #! self.Farmacia = ServerFarmacia(self.servers_ip_port)
-        #! self.Gateway = ServerGateway(self.servers_ip_port)
+        Thread(target=ServerConsulta, args=(dict(self.servers_ip_port),), daemon=True).start()
 
     
     def reconnect(self):

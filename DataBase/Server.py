@@ -1,5 +1,4 @@
 import socket
-import sys
 from DataBase.DataBaseFunctions import *
 import json
 from threading import Thread

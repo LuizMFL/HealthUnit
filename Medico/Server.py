@@ -1,5 +1,4 @@
 import socket
-import sys
 from Medico.MedicoFunctions import *
 import json
 from threading import Thread

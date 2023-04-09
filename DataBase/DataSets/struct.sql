@@ -125,8 +125,8 @@ CREATE TABLE IF NOT EXISTS calendario (
 ID SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
 Data_Calendar DATE NOT NULL UNIQUE,
 Dia_Semana ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
-Feriado BOOLEAN NOT NULL,
-CONSTRAINT PK_Calendario PRIMARY KEY (ID)
+CONSTRAINT PK_Calendario PRIMARY KEY (ID),
+CONSTRAINT AK_Calendario UNIQUE(ID_Calendario)
 );
 
 CREATE TABLE IF NOT EXISTS calendario_especializacao_medico (

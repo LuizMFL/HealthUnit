@@ -1,12 +1,11 @@
 import socket
-import sys
 from GerenciamentoUnidade.GerenciamentoFunctions import *
 import json
 from threading import Thread
 
 class Server:
     def __init__(self, servidores:dict) -> None:
-        self.name_server = 'FC'
+        self.name_server = 'GR'
         self.servers_ip_port = dict(servidores)
         self.name_servidores = dict(servidores).popitem()[0]
         #self.GR = Gerenciador()

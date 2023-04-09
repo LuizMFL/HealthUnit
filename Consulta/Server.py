@@ -1,14 +1,14 @@
 import socket
-from Farmacia.FarmaciaFunctions import *
+from Consulta.ConsultaFunctions import *
 import json
 from threading import Thread
 
 class Server:
     def __init__(self, servidores:dict) -> None:
-        self.name_server = 'FC'
+        self.name_server = 'CS'
         self.servers_ip_port = dict(servidores)
         self.name_servidores = dict(servidores).popitem()[0]
-        #self.FC = Farmaceutico()
+        #self.CS = Consulta()
         self.__bind()
         Thread(target=self.__send_ip_port_to_serverServidores, args=(self,), daemon=True).start()
         self.server()
@@ -26,7 +26,7 @@ class Server:
                     if data['function'] == 'AtualizarServers' and 'Request' in data.keys():
                         self.__new_servers_ip_port(data['Request'])
                     else:
-                        data = self.FC.Select_function(data)
+                        data = self.CS.Select_function(data)
                         data = json.dumps(data, indent=2).encode('utf-8')
                         print(f'[+] {self.name_server}: Send Result to client...')
                         connection.sendall(data)

@@ -1,5 +1,4 @@
 import socket
-import sys
 from Paciente.PacienteFunctions import *
 import json
 from threading import Thread
@@ -9,7 +8,7 @@ class Server:
         self.name_server = 'PC'
         self.servers_ip_port = dict(servidores)
         self.name_servidores = dict(servidores).popitem()[0]
-        #self.PC = Paciente()
+        self.PC = Paciente()
         self.__bind()
         Thread(target=self.__send_ip_port_to_serverServidores, args=(self,), daemon=True).start()
         self.server()

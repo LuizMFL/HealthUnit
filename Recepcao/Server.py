@@ -1,5 +1,4 @@
 import socket
-import sys
 from Recepcao.RecepcaoFunctions import *
 import json
 from threading import Thread
