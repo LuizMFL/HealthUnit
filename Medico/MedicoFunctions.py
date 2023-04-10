@@ -15,7 +15,7 @@ class Medico:
             'Get_Consultas_Realizadas': self.response_in_CS,
             'Get_Consultas_Reservadas': self.response_in_CS,
             'Reservar_Consulta': self.response_in_CS,
-            'Get_Avaliacoes': self.get_avaliacoes,
+            'Get_Avaliacoes_Profissional': self.get_avaliacoes_profissional,
             'Insert_Especializacao': self.insert_especializacao,
             'Del_Especializacao': self.del_especializacao,
             'Get_Doenca_Remedio': self.get_remedio,
@@ -74,6 +74,19 @@ class Medico:
                             response['Results']['Result'][0]['ID'] = id_md
         return response
     
+    def get_avaliacoes_profissional(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Profissional' in value.keys() and isinstance(value['ID_Profissional'], int):
+            values = {'ID_Profissional': value['ID_Profissional']}
+            get_aval_prof = {'function': 'Select','table_name': 'avaliacao_profissional', 'where': self._normalize_type(values, 'where')}
+            response_aval_prof = self.response_in_server(get_aval_prof)
+            if response_aval_prof['Response'][0] == 200:
+                for aval_prof in response_aval_prof['Results']['Result']:
+                    get_paciente = {'function': 'Get_Paciente', 'values': {'ID_Paciente': aval_prof['ID_Paciente']}}
+                    response_paciente = self.response_in_server(get_paciente, 'PC')
+                    
+
+            
     def _get_pessoa(self, cpf:str):
         get_pe = {'function': 'Select','table_name': 'pessoa', 'where': self._normalize_type({'CPF': cpf}, 'where')}
         response = self.response_in_server(get_pe)

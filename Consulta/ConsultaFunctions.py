@@ -41,7 +41,7 @@ class Consulta:
         if 'Atual' in value.keys() and isinstance(value['Atual'], bool):
             if value['Atual']:
                 data_atual = datetime.today().date()
-                response_calen['Results']['Result'] = [x for x in response_calen['Results']['Result'] if datetime.strptime(x['Data_Calendar'], '%d-%m-%Y').date() >= data_atual]
+                response_calen['Results']['Result'] = [x for x in response_calen['Results']['Result'] if datetime.strptime(x['Data_Calendar'], '%d/%m/%Y').date() >= data_atual]
             response = response_calen
         return response
     
@@ -83,6 +83,15 @@ class Consulta:
                 pass
         return response
     
+    def get_especializacao_medico(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        values = {}
+        if 'ID_Especializacao' in value.keys() and isinstance(value['ID_Especializacao'], int):
+            values['ID_Especializacao'] = value['ID_Especializacao']
+        elif 'ID_Medico' in value.keys() and isinstance(value['ID_Medico'], int):
+            values['ID_Medico'] = value['ID_Medico']
+        get_esp_med = {'function': 'Select', 'table_name': 'especializacao_medico', 'where': self._normalize_type(values, 'where')}
+        self.response_in_server(get_esp_med, 'MD')
     def get_consultas_disponiveis(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         values = {'Atual':True}
