@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 from datetime import datetime, date, time
 from ctypes import c_uint8 as tinyint, c_uint16 as smallint, c_uint, c_uint32, c_uint64
+import re
 class DataBase:
     def __init__(self) -> None:
         self.PATH_DataSets = str(Path(__file__).parent / 'Datasets')
@@ -42,14 +43,14 @@ class DataBase:
                 for i, dict_value in enumerate(value['values']):
                     if 'value' in dict_value.keys():
                         if isinstance(dict_value['value'], type(date.today())):
-                            value['values'][i]['value'] = dict_value['value'].strftime('%d-%m-%Y')
+                            value['values'][i]['value'] = dict_value['value'].strftime('%d/%m/%Y')
                         elif isinstance(dict_value['value'], type(time.max)):
                             value['values'][i]['value'] = dict_value['value'].strftime('%H:%M:%S')
             value['Result'] = tuple(value['Result'])
             for i, dict_result in enumerate(value['Result']):
                 for key in dict(dict_result).keys():
                     if isinstance(dict_result[key], type(date.today())):
-                        value['Result'][i][key] = dict_result[key].strftime('%d-%m-%Y')
+                        value['Result'][i][key] = dict_result[key].strftime('%d/%m/%Y')
                     elif isinstance(dict_result[key], type(time.max)):
                         value['Result'][i][key] = dict_result[key].strftime('%H:%M:%S')
             value['Result'] = tuple(value['Result'])
@@ -103,7 +104,7 @@ class DataBase:
                             typ = time() if str(typ).count('time') else typ
                             if isinstance(typ, type(date.today())):
                                 try:
-                                    column['value'] = datetime.strptime(column['value'], '%d-%m-%Y').date()
+                                    column['value'] = datetime.strptime(column['value'], '%d/%m/%Y').date()
                                 except Exception:
                                     value_Original['Response'] = (406, 'Format Date Error')
                                     return value_Original
@@ -164,13 +165,26 @@ class DataBase:
                     for column in value['values']:
                         if column['name'] in informations.keys():
                             typ = informations[column['name']]['DATA_TYPE']
+                            typ_ = str(typ)
                             typ = int() if str(typ).count('int') else typ
                             typ = str() if str(typ).count('char') or str(typ).count('text') else typ
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
-                            if isinstance(typ, type(date.today())):
+                            
+                            if typ_ in ['char', 'varchar']:
+                                column_type = informations[column['name']]['COLUMN_TYPE']
+                                tam = int(re.sub('[^0-9]', '', column_type))
+                                if typ_ == 'varchar':
+                                    if not 0 < len(column['value']) < tam:
+                                        value_Original['Response'] = (406, f'{column_type} Lenght Error')
+                                        return value_Original
+                                else:
+                                    if not len(column['value']) == tam:
+                                        value_Original['Response'] = (406, f'{column_type} Lenght Error')
+                                        return value_Original
+                            elif isinstance(typ, type(date.today())):
                                 try:
-                                    column['value'] = datetime.strptime(column['value'], '%d-%m-%Y').date()
+                                    column['value'] = datetime.strptime(column['value'], '%d/%m/%Y').date()
                                 except Exception:
                                     value_Original['Response'] = (406, 'Format Date Error')
                                     return value_Original
@@ -238,13 +252,25 @@ class DataBase:
                     for column in value['values']:
                         if column['name'] in informations.keys():
                             typ = informations[column['name']]['DATA_TYPE']
+                            typ_ = str(typ)
                             typ = int() if str(typ).count('int') else typ
                             typ = str() if str(typ).count('char') or str(typ).count('text') else typ
                             typ = date.today() if str(typ).count('date') else typ
                             typ = time() if str(typ).count('time') else typ
-                            if isinstance(typ, type(date.today())):
+                            if typ_ in ['char', 'varchar']:
+                                column_type = informations[column['name']]['COLUMN_TYPE']
+                                tam = int(re.sub('[^0-9]', '', column_type))
+                                if typ_ == 'varchar':
+                                    if not 0 < len(column['value']) < tam:
+                                        value_Original['Response'] = (406, f'{column_type} Lenght Error')
+                                        return value_Original
+                                else:
+                                    if not len(column['value']) == tam:
+                                        value_Original['Response'] = (406, f'{column_type} Lenght Error')
+                                        return value_Original
+                            elif isinstance(typ, type(date.today())):
                                 try:
-                                    column['value'] = datetime.strptime(column['value'], '%d-%m-%Y').date()
+                                    column['value'] = datetime.strptime(column['value'], '%d/%m/%Y').date()
                                 except Exception:
                                     value_Original['Response'] = (406, 'Format Date Error')
                                     return value_Original
@@ -283,7 +309,7 @@ class DataBase:
                             typ = time() if str(typ).count('time') else typ
                             if isinstance(typ, type(date.today())):
                                 try:
-                                    column['value'] = datetime.strptime(column['value'], '%d-%m-%Y').date()
+                                    column['value'] = datetime.strptime(column['value'], '%d/%m/%Y').date()
                                 except Exception:
                                     value_Original['Response'] = (406, 'Format Date Error')
                                     return value_Original
@@ -363,7 +389,7 @@ class DataBase:
                             typ = time() if str(typ).count('time') else typ
                             if isinstance(typ, type(date.today())):
                                 try:
-                                    column['value'] = datetime.strptime(column['value'], '%d-%m-%Y').date()
+                                    column['value'] = datetime.strptime(column['value'], '%d/%m/%Y').date()
                                 except Exception:
                                     value_Original['Response'] = (406, 'Format Date Error')
                                     return value_Original
@@ -496,7 +522,7 @@ class DataBase:
 if __name__ == "__main__":
     db = DataBase()
     #? Examples:
-    a = db.Select_function({'function': 'Insert','table_name': 'pessoa', 'where': [], 'values':[{'name':'CPF', 'value': '10854389451'}, {'name':'Nome', 'value':'Marcos'}, {'name':'Telefone', 'value':'81999496154'}, {'name':'Email', 'value': 'Luiz.sadadsadaakdajdadkasjdahdadkasskdad'}, {'name':'CEP', 'value':'51231333'}, {'name': 'Genero', 'value':'F'}, {'name':'Nascimento', 'value': '20-03-2000'}, {'name': 'Complem_Endereco', 'value': 'Afonso'}, {'name': 'Idade', 'value': 15}]})
+    a = db.Select_function({'function': 'Insert','table_name': 'pessoa', 'where': [], 'values':[{'name':'CPF', 'value': '10854389451'}, {'name':'Nome', 'value':'Marcos'}, {'name':'Telefone', 'value':'81999496154'}, {'name':'Email', 'value': 'Luiz.sadadsadaakdajdadkasjdahdadkasskdad'}, {'name':'CEP', 'value':'51231333'}, {'name': 'Genero', 'value':'F'}, {'name':'Nascimento', 'value': '20/03/2000'}, {'name': 'Complem_Endereco', 'value': 'Afonso'}, {'name': 'Idade', 'value': 15}]})
     print(f'{a["Response"]} -> {a["Result"]}')
     a = db.Select_function({'function': 'Update', 'table_name': 'pessoa', 'values': [{'name':'Nome', 'value': 'Rodrigo'}],'where': [{'name': 'ID', 'operator':'=', 'value':3}]})
     print(f'{a["Response"]} -> {a["Result"]}')

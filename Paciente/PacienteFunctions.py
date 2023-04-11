@@ -327,11 +327,17 @@ class Paciente:
     
     def cadastro_pa(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}} 
+        print(value)
+        print()
         if 'CPF' in value.keys() and isinstance(value['CPF'], str):
             response_pe = self._cadastro_pe(value)
+            print(response_pe)
+            print()
             if response_pe['Response'][0] == 200 and response_pe['Results']['Response'][0] == 200:
                 values = {'CPF': value['CPF']}
                 response_get_pe = self._get_pessoa(values)
+                print(response_get_pe)
+                print()
                 values = {'ID_Pessoa': response_get_pe['Results']['Result'][0]['ID']}
                 set_pa = {'function': 'Insert', 'table_name': 'paciente', 'values': self._normalize_type(values, 'values')}
                 response_pa = self.response_in_server(set_pa)
@@ -365,13 +371,17 @@ class Paciente:
         for key in value.keys():
             x = value[key]
             if isinstance(x, str):
-                correct = '[^a-zA-Z0-9-]'
+                correct = ''
                 if key in ['CPF', 'Telefone', 'CEP']:
-                    correct = '[^0-9]+'
-                elif key == 'Nome':
-                    correct = '[^a-zA-Z ]+'
+                    correct = '[^0-9]'
+                elif key in ['Nome', 'Genero']:
+                    correct = '[^a-zA-Z ]'
                 elif key == 'Nascimento':
-                    correct =  '[^0-9|-]+'
+                    correct =  '[^0-9/]'
+                elif key == 'Email':
+                    correct = '[^a-zA-Z0-9@.]'
+                elif key in ['Complem_Endereco', 'Descricao']:
+                    correct = '[^a-zA-Z0-9.-/:?]'
                 if option == 'values':
                     value_aux.append({'name': key, 'value': re.sub(correct, '', x)})
                 elif option == 'where':
@@ -408,33 +418,3 @@ class Paciente:
             sock.close()
         except Exception as e:
             print(f'ERROR -> {e}')
-
-
-    def get_consultas_realizadas(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'CPF' in value.keys() and isinstance(value['CPF'], str):
-            cpf = value['CPF']
-            response_get_pa =  self.get_paciente(cpf)
-            if response_get_pa['Response'][0] == 200 and len(response_get_pa['Results']['Result']):
-                id_pa = response_get_pa['Results']['Result'][0]['ID']
-            
-    def get_consultas_realizadas(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'CPF' in value.keys() and isinstance(value['CPF'], str):
-            cpf = value['CPF']
-            response_get_pa =  self.get_paciente(cpf)
-            if response_get_pa['Response'][0] == 200 and len(response_get_pa['Results']['Result']):
-                id_pa = response_get_pa['Results']['Result'][0]['ID']
-                get_con_pa = {'function': 'Select','table_name': 'consulta_paciente_reservada', 'where': self._normalize_type({'ID_Paciente': id_pa}, 'where')}
-                response_get_con_pa = self.response_in_server(get_con_pa)
-                response = {'Response': (200, 'Success!'), 'Results':{'Result': []}}
-                for consulta_pa in response_get_con_pa['Results']['Result']:
-                    id_con = consulta_pa['ID_Consulta']
-                    get_con = {'function': 'Select','table_name': 'consulta', 'where': self._normalize_type({'ID': id_con}, 'where')}
-                    response_get_con = self.response_in_server(get_con)
-                    if response_get_con['Response'][0] == 200 and len(response_get_con['Results']['Result']):
-                        response['Results']['Result'].append(response_get_con['Results']['Result'][0])
-                    else:
-                        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-                        break
-        return response

@@ -1,4 +1,5 @@
 from DataBase.Server import Server as ServerDB
+from Profissional.Server import Server as ServerProfissional
 from Paciente.Server import Server as ServerPaciente
 from Farmacia.Server import Server as ServerFarmacia
 from GerenciamentoUnidade.Server import Server as ServerGerenciador
@@ -31,12 +32,13 @@ class Servidores:
 
     def __create_modules(self):
         Thread(target=ServerDB, args=(dict(self.servers_ip_port),), daemon=True).start()
-        Thread(target=ServerPaciente, args=(dict(self.servers_ip_port),), daemon=True).start()
-        Thread(target=ServerFarmacia, args=(dict(self.servers_ip_port),), daemon=True).start()
-        Thread(target=ServerGerenciador, args=(dict(self.servers_ip_port),), daemon=True).start()
-        Thread(target=ServerMedico, args=(dict(self.servers_ip_port),), daemon=True).start()
-        Thread(target=ServerRecepcionista, args=(dict(self.servers_ip_port),), daemon=True).start()
-        Thread(target=ServerConsulta, args=(dict(self.servers_ip_port),), daemon=True).start()
+        Thread(target=ServerProfissional, args=(dict(self.servers_ip_port),), daemon=True).start()
+        #Thread(target=ServerPaciente, args=(dict(self.servers_ip_port),), daemon=True).start()
+        #Thread(target=ServerFarmacia, args=(dict(self.servers_ip_port),), daemon=True).start()
+        #Thread(target=ServerGerenciador, args=(dict(self.servers_ip_port),), daemon=True).start()
+        #Thread(target=ServerMedico, args=(dict(self.servers_ip_port),), daemon=True).start()
+        #Thread(target=ServerRecepcionista, args=(dict(self.servers_ip_port),), daemon=True).start()
+        #Thread(target=ServerConsulta, args=(dict(self.servers_ip_port),), daemon=True).start()
 
     
     def reconnect(self):
