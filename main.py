@@ -20,7 +20,7 @@ class Servidores:
         self.__bind()
         self.__create_modules()
         print(f'{__name__} -> ID: {getpid()} & Parent Process: {getppid()}')
-        Thread(target=self.exit, args=(self.servers_ip_port,), daemon=False).start()
+        Thread(target=self.exit, args=(self.servers_ip_port,), daemon=True).start()
         self.server()
         
     def exit(x, servers_ip_port):
@@ -38,7 +38,6 @@ class Servidores:
                         sock.close()
                     except Exception as e:
                         print(f'[!] Error -> {e}')
-                    
             except:
                 print('DEU ALGUM ERRO!')
                 break  # if user pressed a key other than the given key the loop will break
@@ -126,7 +125,7 @@ class Servidores:
                 except Exception as e:
                     print(f'[!] {self.name_server}: Error -> {e}')
                     self.servers_ip_port.pop(key)
-        
+        sys.exit()
     def __new_server_ip_port(self, value:dict):
         self.servers_ip_port[value['name_server']] = tuple(value['values'][0])
         print(f'[%] {self.name_server}: Update server_ip_port {value["name_server"]} to {value["values"][0]}')

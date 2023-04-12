@@ -10,7 +10,7 @@ class Profissional:
             'Del_Pessoa': self.del_pessoa, # CPF ou ID_Pessoa
             'Get_Profissional': self.get_profissional, # Recebe CPF, ID_Pessoa ou ID_Profissional e entrega Todas informações da Pessoa e do Profissional
             'Cadastro_Profissional': self.cadastro_profissional, # Recebe Todas informações da Pessoa e a Profissão que deseja
-            'Update_Pe': self.update_pe,  # Recebe o CPF ou ID_Pessoa e atualiza as outras informações
+            'Update_Pe': self.update_pe,  # Recebe o ID_Pessoa e atualiza as outras informações
             'Get_Avaliacoes_Profissional': self.get_avaliacoes_profissional, # Recebe CPF, ID_Pessoa ou ID_Profissional e entrega Todas informações da Pessoa e do Profissional e do Paciente
         }
         
@@ -35,29 +35,27 @@ class Profissional:
         if 'CPF' in value.keys() and isinstance(value['CPF'], str) and len(value['CPF']) >= 11 and 'Profissao' in value.keys() and isinstance(value['Profissao'], str):
             table_name = value.pop('Profissao').lower()
             response_pe = self._cadastro_pe(value)
-            print(response_pe)
             if response_pe['Results']['Response'][0] == 200 and response_pe['Results']['Response'][0] == 200:
                 id_pessoa = self._get_pessoa(value)['Results']['Result'][0]['ID']
                 values = {'ID_Pessoa': id_pessoa}
                 response_pr = self._cadastro_pr(values)
-                print(response_pr)
                 if response_pr['Response'][0] == 200 and response_pr['Results']['Response'][0] == 200:
                     id_profissional = self._get_profissional(values)['Results']['Result'][0]['ID']
                     values = {'ID_Profissional': id_profissional}
                     set_pr = {'function': 'Insert', 'table_name': table_name, 'values': self._normalize_type(values, 'values')}
                     response_pr = self.response_in_server(set_pr)
-                    print(response_pr)
                     if response_pr['Response'][0] == 200 and response_pr['Results']['Response'][0] == 200:
                         response = response_pr
                     else:
                         values = {'ID_Pessoa': id_pessoa}
-                        self.del_pessoa()
+                        self.del_pessoa(values)
         return response
     
     def get_profissional(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         if ('CPF' in value.keys() and isinstance(value['CPF'], str)) or ('ID_Pessoa' in value.keys() and isinstance(value['ID_Pessoa'], int)):
-            response_pe = self._get_pessoa(value)
+            values = {'CPF': value['CPF']}
+            response_pe = self._get_pessoa(values)
             if response_pe['Response'][0] == 200 and len(response_pe['Results']['Result']):
                 values = {'ID_Pessoa': response_pe['Results']['Result'][0]['ID']}
                 response_pr = self._get_profissional(values)
@@ -120,9 +118,9 @@ class Profissional:
             values = {'ID': value['ID_Pessoa']}
         del_pe = {'function': 'Delete','table_name': 'pessoa', 'where': self._normalize_type(values, 'where')}
         if len(values.keys()):
-            response_pa = self.response_in_server(del_pe)
-            if response_pa['Response'][0] == 200:
-                response = response_pa
+            response_pe = self.response_in_server(del_pe)
+            if response_pe['Response'][0] == 200:
+                response = response_pe
         return response
     
     def _get_profissional(self, value:dict):
@@ -144,6 +142,8 @@ class Profissional:
         response_pr = self.get_profissional(value)
         if response_pr['Response'][0] == 200 and len(response_pr['Results']['Result']):
             values = {'ID_Profissional': response_pr['Results']['Result'][0]['ID_Profissional']}
+            if 'ID_Paciente' in value.keys():
+                values['ID_Paciente'] = value['ID_Paciente']
             get_aval = {'function': 'Select','table_name': 'avaliacoes_profissional', 'where': self._normalize_type(values, 'where')}
             response_aval = self.response_in_server(get_aval)
             if response_aval['Response'][0] == 200:
@@ -188,13 +188,13 @@ class Profissional:
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         value_w = {}
         if 'CPF' in value.keys():
-            cpf = value.pop('CPF')
-            if isinstance(cpf, str):
-                value_w['CPF'] = cpf
+            value.pop('CPF')
         if 'ID_Pessoa' in value.keys():
             id_pessoa = value.pop('ID_Pessoa')
-            if isinstance(value['ID_Pessoa'], int):
+            if isinstance(id_pessoa, int):
                 value_w['ID'] = id_pessoa
+        if 'ID' in value.keys():
+            value.pop('ID')
         if value_w.keys():
             upd_pe = {'function': 'Update', 'table_name': 'pessoa', 'where': self._normalize_type(value_w, 'where'), 'values': self._normalize_type(value, 'values')}
             response_pe = self.response_in_server(upd_pe)

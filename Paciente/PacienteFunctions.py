@@ -7,22 +7,14 @@ class Paciente:
     def __init__(self) -> None:
         self.server = {}
         self.functions = {
-            'Del_Paciente': self.del_paciente,
+            'Del_Pessoa': self.del_pessoa,
             'Get_Paciente': self.get_paciente,
             'Cadastro_Paciente': self.cadastro_pa,
             'Update_Pe': self.update_pe,
-            'Get_Consultas_Disponiveis': self.response_in_CS, #!
-            'Get_Consultas_Realizadas': self.response_in_CS, #!
-            'Get_Consultas_Reservadas': self.response_in_CS, #!
-            'Reservar_Consulta': self.response_in_CS, #!
-            'Del_Consulta_Reservada': self.response_in_CS, #!
-            'Insert_Avaliacao_Profissional': self.insert_avaliacao_profissional, 
-            'Get_Avaliacao_Profissional': self.get_avaliacao_profissional, 
-            'Get_Profissional': self.get_profissional, #!
+            'Insert_Avaliacao_Profissional': self.insert_avaliacao_profissional,
             'Update_Avaliacao_Profissional': self.update_avaliacao_profissional, #  Continuar daqui
             'Del_Avaliacao_Profissional': self.del_avaliacao_profissional,
             'Insert_Avaliacao_Unidade': self.insert_avaliacao_unidade,
-            'Get_Avaliacao_Unidade': self.get_avaliacao_unidade,
             'Update_Avaliacao_Unidade': self.update_avaliacao_unidade,
             'Del_Avaliacao_Unidade': self.del_avaliacao_unidade,
             'Insert_Doenca_Paciente': self.insert_doenca_paciente,
@@ -30,7 +22,6 @@ class Paciente:
             'Del_Doenca_Paciente': self.del_doenca_paciente,
             'Get_Receitas': self.get_receitas,
             'Get_Receita_Remedio': self.get_receita_remedio
-            #?
         }
         
     def Select_function(self, value:dict):
@@ -69,58 +60,6 @@ class Paciente:
                 response = response_aval
         return response
 
-    def get_avaliacao_profissional(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        values = {}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int):
-            values['ID_Paciente'] = value['ID_Paciente']
-        if  'ID_Profissional' in value.keys() and isinstance(value['ID_Profissional', int]):
-            values['ID_Profissional']: value['ID_Profissional']
-        if len(values.keys()):
-            get_aval = {'function': 'Select','table_name': 'avaliacao_profissional', 'where': self._normalize_type(values, 'where')}
-            response_aval = self.response_in_server(get_aval)
-            if response_aval['Response'][0] == 200:
-                for aval in response_aval['Results']['Result']:
-                    values = {'ID_Paciente': aval['ID_Paciente']}
-                    response_pa = self.get_paciente(values)
-                    values = {'ID_Profissional': aval['ID_Profissional']}
-                    response_pr = self.get_profissional(values)
-                    if response_pa['Response'][0] == 200 and len(response_pa['Results']['Result']) and response_pr['Response'][0] == 200 and len(response_pr['Results']['Result']):
-                        aval.pop('ID_Paciente')
-                        aval.pop('ID_Profissional')
-                        aval['Paciente'] = response_pa['Results']['Result'][0]
-                        aval['Profissional'] = response_pr['Results']['Result'][0]
-                response = response_aval
-        return response
-    
-    def get_profissional(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if  'ID_Profissional' in value.keys() and isinstance(value['ID_Profissional', int]):
-            values = {'ID_Profissional': value['ID_Profissional']}
-            get_md = {'function': 'Select','table_name': 'medico', 'where': self._normalize_type(values, 'where')}
-            get_far = {'function': 'Select','table_name': 'farmaceutico', 'where': self._normalize_type(values, 'where')}
-            get_rec = {'function': 'Select','table_name': 'recepcionista', 'where': self._normalize_type(values, 'where')}
-            response_md = self.response_in_server(get_md)
-            response_far = self.response_in_server(get_far)
-            response_rec = self.response_in_server(get_rec)
-            response_pr = {'Response': (406, 'Failed'), 'Results':{'Result':[]}} if not (response_md['Response'][0] == 200 and len(response_md['Results']['Result'])) else response_md
-            response_pr = response_pr if not (response_far['Response'][0] == 200 and len(response_far['Results']['Result'])) else response_far
-            response_pr = response_pr if not (response_rec['Response'][0] == 200 and len(response_rec['Results']['Result'])) else response_far
-            if response_pr['Response'][0] == 200:
-                if response_pr['Results']['table_name'] == 'medico':
-                    values = {'ID_Medico': response_pr['Results']['Result'][0]['ID']}
-                    response_pr = self.get_medico(values)
-                    response_pr['Results']['Result'][0]['Profissao'] = 'Medico'
-                elif response_pr['Results']['table_name'] == 'recepcionista':
-                    values = {'ID_Recepcionista': response_pr['Results']['Result'][0]['ID']}
-                    response_pr = self.get_recepcionista(values)
-                    response_pr['Results']['Result'][0]['Profissao'] = 'Recepcionista'
-                elif response_pr['Results']['table_name'] == 'farmaceutico':
-                    values = {'ID_Farmaceutico': response_pr['Results']['Result'][0]['ID']}
-                    response_pr = self.get_farmaceutico(values)
-                    response_pr['Results']['Result'][0]['Profissao'] = 'Farmaceutico'
-                response = response_pr
-        return response
     def update_avaliacao_profissional(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Profissional' in value.keys() and isinstance(value['ID_Profissional', int]) and 'Nota' in value.keys() and isinstance(value['Nota'], int) and 0 <= value['Nota'] <= 100:
@@ -159,15 +98,6 @@ class Paciente:
                 values['Descricao'] = value['Descricao']
             set_aval = {'function': 'Insert', 'table_name': 'avaliacao_unidade', 'values': self._normalize_type(values, 'values')}
             response = self.response_in_server(set_aval)
-        return response
-    def get_avaliacao_unidade(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int):
-            values = {
-            'ID_Paciente': value['ID_Paciente']
-            }
-            get_aval = {'function': 'Select','table_name': 'avaliacao_unidade', 'where': self._normalize_type(values, 'where')}
-            response = self.response_in_server(get_aval)
         return response
 
     def update_avaliacao_unidade(self, value:dict):
@@ -227,22 +157,24 @@ class Paciente:
             response = self.response_in_server(del_do_pa)
         return response
     
-    def del_paciente(self, value:dict):
+    def del_pessoa(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        values = {}
         if 'CPF' in value.keys() and isinstance(value['CPF'], str):
             values = {'CPF': value['CPF']}
-            del_pe = {'function': 'Delete','table_name': 'pessoa', 'where': self._normalize_type(values, 'where')}
-            response_pa = self.response_in_server(del_pe)
-            if response_pa['Response'][0] == 200:
-                response = response_pa
+            response_pe = self._get_pessoa(values)
+            values = {}
+            if response_pe['Response'][0] == 200 and len(response_pe['Results']['Result']):
+                values = {'ID': response_pe['Results']['Result'][0]['ID']}
         elif 'ID_Pessoa' in value.keys() and isinstance(value['ID_Pessoa'], int):
             values = {'ID': value['ID_Pessoa']}
-            del_pe = {'function': 'Delete','table_name': 'pessoa', 'where': self._normalize_type(values, 'where')}
-            response_pa = self.response_in_server(del_pe)
-            if response_pa['Response'][0] == 200:
-                response = response_pa
+        del_pe = {'function': 'Delete','table_name': 'pessoa', 'where': self._normalize_type(values, 'where')}
+        if len(values.keys()):
+            response_pe = self.response_in_server(del_pe)
+            if response_pe['Response'][0] == 200:
+                response = response_pe
         return response
-
+    
     def get_paciente(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         if 'CPF' in value.keys() and isinstance(value['CPF'], str):
@@ -252,29 +184,27 @@ class Paciente:
                 values = {'ID_Pessoa': response_pe['Results']['Result'][0]['ID']}
                 get_pa = {'function': 'Select','table_name': 'paciente', 'where': self._normalize_type(values, 'where')}
                 response_pa = self.response_in_server(get_pa)
-                if response_pa['Response'][0] == 200:
+                if response_pa['Response'][0] == 200 and len(response_pa['Results']['Result']):
                     response = response_pa
-                    if len(response_pa['Results']['Result']):
-                        id_pa = response_pa['Results']['Result'][0]['ID']
-                        for key in response_pe['Results']['Result'][0].keys():
-                            response['Results']['Result'][0][key] = response_pe['Results']['Result'][0][key]
-                        response['Results']['Result'][0]['ID'] = id_pa
+                    id_pa = response_pa['Results']['Result'][0]['ID']
+                    for key in response_pe['Results']['Result'][0].keys():
+                        response['Results']['Result'][0][key] = response_pe['Results']['Result'][0][key]
+                    response['Results']['Result'][0]['ID'] = id_pa
         elif 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int):
             values = {'ID': value['ID_Paciente']}
             get_pa = {'function': 'Select','table_name': 'paciente', 'where': self._normalize_type(values, 'where')}
             response_pa = self.response_in_server(get_pa)
-            if response_pa['Response'][0] == 200:
-                response = response_pa
-                if len(response_pa['Results']['Result']):
-                    values['ID'] = response_pa['Results']['Result'][0]['ID_Pessoa']
-                    response_pe = self._get_pessoa(values)
-                    if response_pe['Response'][0] == 200 and len(response_pe['Results']['Result']):
-                        id_pa = response_pa['Results']['Result'][0]['ID']
-                        for key in response_pe['Results']['Result'][0].keys():
-                            response['Results']['Result'][0][key] = response_pe['Results']['Result'][0][key]
-                        response['Results']['Result'][0]['ID'] = id_pa
-                    else:
-                        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+            if response_pa['Response'][0] == 200 and len(response_pa['Results']['Result']):
+                values['ID'] = response_pa['Results']['Result'][0]['ID_Pessoa']
+                response_pe = self._get_pessoa(values)
+                if response_pe['Response'][0] == 200:
+                    response = response_pa
+                    id_pa = response_pa['Results']['Result'][0]['ID']
+                    for key in response_pe['Results']['Result'][0].keys():
+                        response['Results']['Result'][0][key] = response_pe['Results']['Result'][0][key]
+                    response['Results']['Result'][0]['ID'] = id_pa
+                else:
+                    response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         return response
     
     def _get_pessoa(self, value:dict):
@@ -311,40 +241,20 @@ class Paciente:
             response = response_rec_rem
         return response
 
-    def reservar_consulta(self, value:dict):
-        response = {'Response': (406, 'Failed')}
-        if 'ID_Paciente' in value.keys() and value['ID_Paciente'] > 0 and 'ID_Consulta' in value.keys() and value['ID_Consulta'] > 0:
-            response_set_con_to_reservada = self.response_in_server({'function': 'Reservar', 'values': {'ID_Paciente': value['ID_Paciente'], 'ID_Consulta': value['ID_Consulta']}}, 'CS')
-            response = response_set_con_to_reservada
-        return response
-    
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-    def response_in_CS(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID' in value.keys() and isinstance(value['ID'], int):
-            id = value['ID']
-        return response
-    
     def cadastro_pa(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}} 
-        print(value)
-        print()
-        if 'CPF' in value.keys() and isinstance(value['CPF'], str):
+        if 'CPF' in value.keys() and isinstance(value['CPF'], str) and len(value['CPF']) >= 11:
             response_pe = self._cadastro_pe(value)
-            print(response_pe)
-            print()
             if response_pe['Response'][0] == 200 and response_pe['Results']['Response'][0] == 200:
                 values = {'CPF': value['CPF']}
-                response_get_pe = self._get_pessoa(values)
-                print(response_get_pe)
-                print()
-                values = {'ID_Pessoa': response_get_pe['Results']['Result'][0]['ID']}
+                id_pessoa = self._get_pessoa(values)['Results']['Result'][0]['ID']
+                values = {'ID_Pessoa': id_pessoa}
                 set_pa = {'function': 'Insert', 'table_name': 'paciente', 'values': self._normalize_type(values, 'values')}
                 response_pa = self.response_in_server(set_pa)
-                response = response_pa
-                if not (response_pa['Response'][0] == 200 and response_pa['Results']['Response'] == 200):
-                    values = {'CPF': value['CPF']}
-                    self.del_paciente(values)
+                if response_pa['Response'][0] == 200 and response_pa['Results']['Response'][0] == 200:
+                        response = response_pa
+                else:
+                    self.del_pessoa(values)
         return response
 
     def _cadastro_pe(self, value:dict):
@@ -353,12 +263,16 @@ class Paciente:
         return response_pe
 
     def update_pe(self, value:dict): 
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}} 
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         value_w = {}
         if 'CPF' in value.keys():
-            value_w['CPF'] = value.pop('CPF')
+            value.pop('CPF')
         if 'ID_Pessoa' in value.keys():
-            value_w['ID'] = value.pop('CPF')
+            id_pessoa = value.pop('ID_Pessoa')
+            if isinstance(id_pessoa, int):
+                value_w['ID'] = id_pessoa
+        if 'ID' in value.keys():
+            value.pop('ID')
         if value_w.keys():
             upd_pe = {'function': 'Update', 'table_name': 'pessoa', 'where': self._normalize_type(value_w, 'where'), 'values': self._normalize_type(value, 'values')}
             response_pe = self.response_in_server(upd_pe)

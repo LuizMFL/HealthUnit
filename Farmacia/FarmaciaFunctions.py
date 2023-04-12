@@ -7,12 +7,6 @@ class Farmaceutico:
     def __init__(self) -> None:
         self.server = {}
         self.functions = {
-            'Del_Farmaceutico': self.del_farmaceutico,
-            'Get_Farmaceutico': self.get_farmaceutico,
-            'Cadastro_Farmaceutico': self.cadastro_fc,
-            'Update_Pe': self.update_pe,
-            'Get_Avaliacoes': self.get_avaliacoes,
-            'Get_Receita_Paciente': self.get_paciente,
             'Get_Estoque': self.get_estoque,
             'Entregar_Medicamento': self.entregar_medicamento
         }
