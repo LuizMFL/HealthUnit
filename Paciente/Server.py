@@ -2,7 +2,7 @@ import socket
 from Paciente.PacienteFunctions import *
 import json
 from threading import Thread
-
+import sys
 class Server:
     def __init__(self, servidores:dict) -> None:
         self.name_server = 'PC'
@@ -25,6 +25,8 @@ class Server:
                 if data and 'function' in data.keys():
                     if data['function'] == 'AtualizarServers' and 'Request' in data.keys():
                         self.__new_servers_ip_port(data['Request'])
+                    elif data['function'] == 'DesligarServers':
+                        self.__desligar_server()
                     else:
                         data['Servidores'] = dict(self.servers_ip_port)
                         data = self.PC.Select_function(data)
@@ -75,5 +77,8 @@ class Server:
         self.servers_ip_port = {x:tuple(value['values'][0][x]) for x in value['values'][0].keys()}
         print(f'[%] {self.name_server}: Updated servers_ip_port')
     
+    def __desligar_server(self):
+        print(f'{self.name_server} -> shutting down server')
+        sys.exit()
 if __name__ == '__main__':
     server = Server()

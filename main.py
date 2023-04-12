@@ -11,34 +11,47 @@ import json
 from threading import Thread
 import keyboard
 import sys
-
+from multiprocessing import Process
+from os import getpid, getppid
 class Servidores:
     def __init__(self) -> None:
         self.name_server = 'Servidores'
         self.servers_ip_port = {}
         self.__bind()
         self.__create_modules()
-        Thread(target=self.server, args=(self,), daemon=True).start()
-        self.exit()
+        print(f'{__name__} -> ID: {getpid()} & Parent Process: {getppid()}')
+        Thread(target=self.exit, args=(self.servers_ip_port,), daemon=False).start()
+        self.server()
         
-    def exit(self):
+    def exit(x, servers_ip_port):
         while True:  # making a loop
             try:  # used try so that if user pressed other than the given key error will not be shown
                 if keyboard.is_pressed('q'):  # if key 'q' is pressed 
                     print('You Pressed A Key!')
-                    sys.exit()
+                    request = {'function': 'DesligarServers'}
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
+                    sock.settimeout(20)
+                    try:
+                        sock.connect(servers_ip_port['Servidores'])
+                        data = json.dumps(request, indent=2).encode('utf-8')
+                        sock.sendall(data)
+                        sock.close()
+                    except Exception as e:
+                        print(f'[!] Error -> {e}')
+                    
             except:
+                print('DEU ALGUM ERRO!')
                 break  # if user pressed a key other than the given key the loop will break
 
     def __create_modules(self):
-        Thread(target=ServerDB, args=(dict(self.servers_ip_port),), daemon=True).start()
-        Thread(target=ServerProfissional, args=(dict(self.servers_ip_port),), daemon=True).start()
-        #Thread(target=ServerPaciente, args=(dict(self.servers_ip_port),), daemon=True).start()
-        #Thread(target=ServerFarmacia, args=(dict(self.servers_ip_port),), daemon=True).start()
-        #Thread(target=ServerGerenciador, args=(dict(self.servers_ip_port),), daemon=True).start()
-        #Thread(target=ServerMedico, args=(dict(self.servers_ip_port),), daemon=True).start()
-        #Thread(target=ServerRecepcionista, args=(dict(self.servers_ip_port),), daemon=True).start()
-        #Thread(target=ServerConsulta, args=(dict(self.servers_ip_port),), daemon=True).start()
+        Process(target=ServerDB, name='DB', args=(dict(self.servers_ip_port),), daemon=False).start()
+        Process(target=ServerProfissional, name='PR', args=(dict(self.servers_ip_port),), daemon=False).start()
+        Process(target=ServerPaciente, name='PC', args=(dict(self.servers_ip_port),), daemon=False).start()
+        Process(target=ServerFarmacia, name='FC', args=(dict(self.servers_ip_port),), daemon=False).start()
+        Process(target=ServerGerenciador, name='GR', args=(dict(self.servers_ip_port),), daemon=False).start()
+        Process(target=ServerMedico, name='MD', args=(dict(self.servers_ip_port),), daemon=False).start()
+        Process(target=ServerRecepcionista, name='RC', args=(dict(self.servers_ip_port),), daemon=False).start()
+        Process(target=ServerConsulta, name='CS', args=(dict(self.servers_ip_port),), daemon=False).start()
 
     
     def reconnect(self):
@@ -72,7 +85,7 @@ class Servidores:
                     print(f'[!] {self.name_server}: Error -> {e}')
                     self.servers_ip_port.pop(key)
 
-    def server(x, self):
+    def server(self):
         while True:
             try:
                 print(f'[ ] {self.name_server}: Waiting for connection...')
@@ -81,8 +94,11 @@ class Servidores:
                 # Receive the data in small chunks and retransmit it
                 data = connection.recv(1000)
                 data = json.loads(data.decode('utf-8'))
-                if data and 'function' in data.keys() and data['function'] == 'AtualizarServers' and 'Request' in data.keys():
-                    self.__new_server_ip_port(data['Request'])
+                if data and 'function' in data.keys():
+                    if data['function'] == 'AtualizarServers' and 'Request' in data.keys():
+                        self.__new_server_ip_port(data['Request'])
+                    elif data['function'] == 'DesligarServers':
+                        self.__desligar_servers()
                 else:
                     print(f'[-] {self.name_server}: Data None...')
                 # Clean up the connection
@@ -92,6 +108,25 @@ class Servidores:
                 print(f'[!] {self.name_server}: Error to Accept...')
                 self.reconnect()
     
+    def __desligar_servers(self):
+        print(f'[=] {self.name_server}: shutting down servers...')
+        request = {'function': 'DesligarServers'}
+        for key in dict(self.servers_ip_port).keys():
+            if not key == self.name_server:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
+                sock.settimeout(20)
+                try:
+                    print(f'[ ] {self.name_server}: Connecting with Server {key} -> {self.servers_ip_port[key]}...')
+                    sock.connect(self.servers_ip_port[key])
+                    print(f'[.] {self.name_server}: Connection accepted to Server {key}')
+                    print(f'[+] {self.name_server}: Sending servers_ip_port to Server {key}')
+                    data = json.dumps(request, indent=2).encode('utf-8')
+                    sock.sendall(data)
+                    sock.close()
+                except Exception as e:
+                    print(f'[!] {self.name_server}: Error -> {e}')
+                    self.servers_ip_port.pop(key)
+        
     def __new_server_ip_port(self, value:dict):
         self.servers_ip_port[value['name_server']] = tuple(value['values'][0])
         print(f'[%] {self.name_server}: Update server_ip_port {value["name_server"]} to {value["values"][0]}')

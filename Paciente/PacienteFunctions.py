@@ -357,7 +357,7 @@ class Paciente:
         value_w = {}
         if 'CPF' in value.keys():
             value_w['CPF'] = value.pop('CPF')
-        if 'ID' in value.keys():
+        if 'ID_Pessoa' in value.keys():
             value_w['ID'] = value.pop('CPF')
         if value_w.keys():
             upd_pe = {'function': 'Update', 'table_name': 'pessoa', 'where': self._normalize_type(value_w, 'where'), 'values': self._normalize_type(value, 'values')}

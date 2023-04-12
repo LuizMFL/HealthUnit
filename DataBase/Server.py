@@ -2,9 +2,11 @@ import socket
 from DataBase.DataBaseFunctions import *
 import json
 from threading import Thread
-
+from os import getpid, getppid
+import sys
 class Server:
     def __init__(self, servidores:dict) -> None:
+        print(f'{__name__} -> ID: {getpid()} & Parent Process: {getppid()}')
         self.name_server = 'DB'
         self.servers_ip_port = dict(servidores)
         self.name_servidores = dict(servidores).popitem()[0]
@@ -25,6 +27,8 @@ class Server:
                 if data and 'function' in data.keys():
                     if data['function'] == 'AtualizarServers' and 'Request' in data.keys():
                         self.__new_servers_ip_port(data['Request'])
+                    elif data['function'] == 'DesligarServers':
+                        self.__desligar_server()
                     else:
                         data = self.DB.Select_function(data)
                         data = json.dumps(data, indent=2).encode('utf-8')
@@ -74,5 +78,8 @@ class Server:
         self.servers_ip_port = {x:tuple(value['values'][0][x]) for x in value['values'][0].keys()}
         print(f'[%] {self.name_server}: Updated servers_ip_port')
     
+    def __desligar_server(self):
+        print(f'{self.name_server} -> shutting down server')
+        sys.exit()
 if __name__ == '__main__':
     server = Server()
