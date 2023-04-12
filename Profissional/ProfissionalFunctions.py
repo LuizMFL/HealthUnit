@@ -7,7 +7,7 @@ class Profissional:
     def __init__(self) -> None:
         self.server = {}
         self.functions = {
-            'Del_Pessoa': self.del_pessoa, # CPF ou ID_Pessoa
+            'Del_Pessoa': self.del_pessoa, # Recebe ID_Pessoa ou CPF
             'Get_Profissional': self.get_profissional, # Recebe CPF, ID_Pessoa ou ID_Profissional e entrega Todas informações da Pessoa e do Profissional
             'Cadastro_Profissional': self.cadastro_profissional, # Recebe Todas informações da Pessoa e a Profissão que deseja
             'Update_Pe': self.update_pe,  # Recebe o ID_Pessoa e atualiza as outras informações

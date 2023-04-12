@@ -8,7 +8,9 @@ class Farmaceutico:
         self.server = {}
         self.functions = {
             'Get_Estoque': self.get_estoque,
-            'Entregar_Medicamento': self.entregar_medicamento
+            'Entregar_Medicamento': self.entregar_medicamento,
+            'Get_Receitas': self.get_receitas, # ID_Paciente ou CPF #! Depende da Consulta
+            'Get_Receita_Remedio': self.get_receita_remedio # ID_Receita #! Depende dos Remedios que estarão na Farmacia
         }
 
     def Select_function(self, value:dict):

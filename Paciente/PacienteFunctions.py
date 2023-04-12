@@ -7,21 +7,19 @@ class Paciente:
     def __init__(self) -> None:
         self.server = {}
         self.functions = {
-            'Del_Pessoa': self.del_pessoa,
-            'Get_Paciente': self.get_paciente,
+            'Del_Pessoa': self.del_pessoa, # ID_Pessoa ou CPF
+            'Get_Paciente': self.get_paciente, # ID_Paciente ou CPF
             'Cadastro_Paciente': self.cadastro_pa,
-            'Update_Pe': self.update_pe,
-            'Insert_Avaliacao_Profissional': self.insert_avaliacao_profissional,
-            'Update_Avaliacao_Profissional': self.update_avaliacao_profissional, #  Continuar daqui
-            'Del_Avaliacao_Profissional': self.del_avaliacao_profissional,
-            'Insert_Avaliacao_Unidade': self.insert_avaliacao_unidade,
-            'Update_Avaliacao_Unidade': self.update_avaliacao_unidade,
-            'Del_Avaliacao_Unidade': self.del_avaliacao_unidade,
-            'Insert_Doenca_Paciente': self.insert_doenca_paciente,
-            'Get_Doenca_Paciente': self.get_doenca_paciente,
-            'Del_Doenca_Paciente': self.del_doenca_paciente,
-            'Get_Receitas': self.get_receitas,
-            'Get_Receita_Remedio': self.get_receita_remedio
+            'Update_Pe': self.update_pe, # ID_Pessoa 
+            'Insert_Avaliacao_Profissional': self.insert_avaliacao_profissional, # ID_Paciente, ID_Profissional, Nota e Opcional Descrição
+            'Update_Avaliacao_Profissional': self.update_avaliacao_profissional, # ID_Avaliacao_Profissional e Opcionais Nota e Descrição
+            'Del_Avaliacao_Profissional': self.del_avaliacao_profissional, # ID_Avaliacao_Profissional
+            'Insert_Avaliacao_Unidade': self.insert_avaliacao_unidade, # ID_Paciente, Nota e Opcional Descrição
+            'Update_Avaliacao_Unidade': self.update_avaliacao_unidade, # ID_Avaliacao_Unidade e Opcionais Nota e Descrição
+            'Del_Avaliacao_Unidade': self.del_avaliacao_unidade, # ID_Avaliacao_Unidade
+            #'Insert_Doenca_Paciente': self.insert_doenca_paciente, #! Não vale a pena
+            #'Get_Doenca_Paciente': self.get_doenca_paciente,  #! Não vale a pena
+            #'Del_Doenca_Paciente': self.del_doenca_paciente, #! Não vale a pena
         }
         
     def Select_function(self, value:dict):
@@ -62,10 +60,9 @@ class Paciente:
 
     def update_avaliacao_profissional(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Profissional' in value.keys() and isinstance(value['ID_Profissional', int]) and 'Nota' in value.keys() and isinstance(value['Nota'], int) and 0 <= value['Nota'] <= 100:
+        if 'ID_Avaliacao_Profissional' in value.keys() and isinstance(value['ID_Avaliacao_Profissional'], int) and 'Nota' in value.keys() and isinstance(value['Nota'], int) and 0 <= value['Nota'] <= 100:
             values_w = {
-                'ID_Paciente': value['ID_Paciente'],
-                'ID_Profissional': value['ID_Profissional']
+                'ID': value['ID_Avaliacao_Profissional']
             }
             values_u = {
                 'Nota': value['Nota']
@@ -73,18 +70,21 @@ class Paciente:
             if 'Descricao' in value.keys() and isinstance(value['Descricao'], str):
                 values_u['Descricao'] = value['Descricao']
             upd_aval = {'function': 'Update','table_name': 'avaliacao_profissional', 'where': self._normalize_type(values_w, 'where'), 'values': self._normalize_type(values_u, 'values')}
-            response = self.response_in_server(upd_aval)
+            response_up = self.response_in_server(upd_aval)
+            if response_up['Response'][0] == 200:
+                response = response_up
         return response
     
     def del_avaliacao_profissional(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Profissional' in value.keys() and isinstance(value['ID_Profissional'], int):
+        if 'ID_Avaliacao_Profissional' in value.keys() and isinstance(value['ID_Avaliacao_Profissional'], int):
             values= {
-                'ID_Paciente': value['ID_Paciente'],
-                'ID_Profissional': value['ID_Profissional']
+                'ID': value['ID_Avaliacao_Profissional']
             }
             del_aval = {'function': 'Delete','table_name': 'avaliacao_profissional', 'where': self._normalize_type(values, 'where')}
-            response = self.response_in_server(del_aval)
+            response_del = self.response_in_server(del_aval)
+            if response_del['Response'][0] == 200:
+                response = response_del
         return response
 
     def insert_avaliacao_unidade(self, value:dict):
@@ -97,14 +97,16 @@ class Paciente:
             if 'Descricao' in value.keys() and isinstance(value['Descricao'], str):
                 values['Descricao'] = value['Descricao']
             set_aval = {'function': 'Insert', 'table_name': 'avaliacao_unidade', 'values': self._normalize_type(values, 'values')}
-            response = self.response_in_server(set_aval)
+            response_aval = self.response_in_server(set_aval)
+            if response_aval['Response'][0] == 200:
+                response = response_aval
         return response
 
     def update_avaliacao_unidade(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'Nota' in value.keys() and isinstance(value['Nota'], int) and 0 <= value['Nota'] <= 100:
+        if 'ID_Avaliacao_Unidade' in value.keys() and isinstance(value['ID_Avaliacao_Unidade'], int) and 'Nota' in value.keys() and isinstance(value['Nota'], int) and 0 <= value['Nota'] <= 100:
             values_w = {
-                'ID_Paciente': value['ID_Paciente']
+                'ID': value['ID_Avaliacao_Unidade']
             }
             values_u = {
                 'Nota': value['Nota']
@@ -112,17 +114,21 @@ class Paciente:
             if 'Descricao' in value.keys() and isinstance(value['Descricao'], str):
                 values_u['Descricao'] = value['Descricao']
             upd_aval = {'function': 'Update','table_name': 'avaliacao_unidade', 'where': self._normalize_type(values_w, 'where'), 'values': self._normalize_type(values_u, 'values')}
-            response = self.response_in_server(upd_aval)
+            response_aval = self.response_in_server(upd_aval)
+            if response_aval['Response'][0] == 200:
+                response = response_aval
         return response
     
     def del_avaliacao_unidade(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int):
-            values= {
-                'ID_Paciente': value['ID_Paciente']
+        if 'ID_Avaliacao_Unidade' in value.keys() and isinstance(value['ID_Avaliacao_Unidade'], int):
+            values = {
+                'ID': value['ID_Avaliacao_Unidade']
             }
             del_aval = {'function': 'Delete','table_name': 'avaliacao_unidade', 'where': self._normalize_type(values, 'where')}
-            response = self.response_in_server(del_aval)
+            response_aval = self.response_in_server(del_aval)
+            if response_aval['Response'][0] == 200:
+                response = response_aval
         return response
     
     def insert_doenca_paciente(self, value:dict):
@@ -133,7 +139,9 @@ class Paciente:
                 'ID_Doenca': value['ID_Doenca']
             }
             set_do_pa = {'function': 'Insert', 'table_name': 'doenca_paciente', 'values': self._normalize_type(values, 'values')}
-            response = self.response_in_server(set_do_pa)
+            response_do_pa = self.response_in_server(set_do_pa)
+            if response_do_pa['Response'][0] == 200:
+                response = response_do_pa
         return response
     
     def get_doenca_paciente(self, value:dict):
