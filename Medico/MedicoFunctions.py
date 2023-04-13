@@ -7,9 +7,9 @@ class Medico:
     def __init__(self) -> None:
         self.server = {}
         self.functions = {
-            'Get_Especializacao': self.get_especializacoes,
-            'Get_Doencas': self.get_doencas,
-            'Get_Doenca_Remedio': self.get_doenca_remedio, #! Depende de Farmacia
+            'Get_Especializacao': self.get_especializacoes, # Opcional ID_Especializacao ou Nome
+            'Get_Doencas': self.get_doencas, # Opcional ID_Doenca ou Nome
+            'Get_Doenca_Remedio': self.get_doenca_remedio, # Opcional ID_Doenca ou Nome #! Depende de Farmacia
             'Insert_Especializacao_Medico': self.insert_especializacao_medico,
             'Del_Especializacao_Medico': self.del_especializacao_medico,
             'Create_Receita': self.insert_receita,

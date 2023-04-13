@@ -7,12 +7,6 @@ class Recepcionista:
     def __init__(self) -> None:
         self.server = {}
         self.functions = {
-            'Del_Recepcionista': self.del_recepcionista,
-            'Get_Recepcionista': self.get_recepcionista,
-            'Cadastro_Recepcionista': self.cadastro_rc,
-            'Update_Pe': self.update_pe,
-            'Get_Avaliacoes': self.get_avaliacoes,
-            'Get_Consultas_Reservadas_Paciente': self.get_consultas_reservadas_paciente,
             'Confirmar_Consulta': self.confirmar_consulta
         }
         
