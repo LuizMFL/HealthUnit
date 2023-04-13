@@ -58,9 +58,9 @@ class Server:
     def __send_ip_port_to_serverServidores(x, self):
         request = {'function': 'AtualizarServers', 'Request': {'name_server': str(self.name_server), 'values': [tuple(self.servers_ip_port[self.name_server])]}}
         while True:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
-            sock.settimeout(10)
             try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
+                sock.settimeout(10)
                 print(f'[ ] {self.name_server}: Connecting with Server {self.name_servidores} -> {self.servers_ip_port[self.name_servidores]}...')
                 sock.connect(self.servers_ip_port[self.name_servidores])
                 print(f'[.] {self.name_server}: Connection accepted to Server {self.name_servidores}')
@@ -72,6 +72,8 @@ class Server:
                 break
             except socket.timeout:
                 print(f'[!] {self.name_server}: Time out Error')
+            except Exception as e:
+                print(f'[!] {self.name_server}: {e}')
 
     
     def __new_servers_ip_port(self, value:dict):
@@ -81,5 +83,3 @@ class Server:
     def __desligar_server(self):
         print(f'{self.name_server} -> shutting down server')
         sys.exit()
-if __name__ == '__main__':
-    server = Server()

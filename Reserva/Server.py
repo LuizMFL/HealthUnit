@@ -1,14 +1,14 @@
 import socket
-from Recepcao.RecepcaoFunctions import *
+from Reserva.ReservaFunctions import *
 import json
 from threading import Thread
 import sys
 class Server:
     def __init__(self, servidores:dict) -> None:
-        self.name_server = 'RC'
+        self.name_server = 'RS'
         self.servers_ip_port = dict(servidores)
         self.name_servidores = dict(servidores).popitem()[0]
-        #self.RC = Recepcionista()
+        self.RS = Reserva()
         self.__bind()
         Thread(target=self.__send_ip_port_to_serverServidores, args=(self,), daemon=True).start()
         self.server()
@@ -28,7 +28,8 @@ class Server:
                     elif data['function'] == 'DesligarServers':
                         self.__desligar_server()
                     else:
-                        data = self.RC.Select_function(data)
+                        data['Servidores'] = dict(self.servers_ip_port)
+                        data = self.RS.Select_function(data)
                         data = json.dumps(data, indent=2).encode('utf-8')
                         print(f'[+] {self.name_server}: Send Result to client...')
                         connection.sendall(data)
@@ -56,9 +57,9 @@ class Server:
     def __send_ip_port_to_serverServidores(x, self):
         request = {'function': 'AtualizarServers', 'Request': {'name_server': str(self.name_server), 'values': [tuple(self.servers_ip_port[self.name_server])]}}
         while True:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
-            sock.settimeout(10)
             try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # IPV4 e TCP
+                sock.settimeout(10)
                 print(f'[ ] {self.name_server}: Connecting with Server {self.name_servidores} -> {self.servers_ip_port[self.name_servidores]}...')
                 sock.connect(self.servers_ip_port[self.name_servidores])
                 print(f'[.] {self.name_server}: Connection accepted to Server {self.name_servidores}')
@@ -70,6 +71,8 @@ class Server:
                 break
             except socket.timeout:
                 print(f'[!] {self.name_server}: Time out Error')
+            except Exception as e:
+                print(f'[!] {self.name_server}: {e}')
 
     
     def __new_servers_ip_port(self, value:dict):
@@ -79,5 +82,3 @@ class Server:
     def __desligar_server(self):
         print(f'{self.name_server} -> shutting down server')
         sys.exit()
-if __name__ == '__main__':
-    server = Server()

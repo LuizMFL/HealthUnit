@@ -4,8 +4,8 @@ from Paciente.Server import Server as ServerPaciente
 from Farmacia.Server import Server as ServerFarmacia
 from GerenciamentoUnidade.Server import Server as ServerGerenciador
 from Medico.Server import Server as ServerMedico
-from Recepcao.Server import Server as ServerRecepcionista
 from Consulta.Server import Server as ServerConsulta
+from Reserva.Server import Server as ServerReserva
 import socket
 import json
 from threading import Thread
@@ -47,11 +47,11 @@ class Servidores:
         Process(target=ServerProfissional, name='PR', args=(dict(self.servers_ip_port),), daemon=False).start()
         Process(target=ServerPaciente, name='PC', args=(dict(self.servers_ip_port),), daemon=False).start()
         Process(target=ServerFarmacia, name='FC', args=(dict(self.servers_ip_port),), daemon=False).start()
-        Process(target=ServerGerenciador, name='GR', args=(dict(self.servers_ip_port),), daemon=False).start()
+        #Process(target=ServerGerenciador, name='GR', args=(dict(self.servers_ip_port),), daemon=False).start()
         Process(target=ServerMedico, name='MD', args=(dict(self.servers_ip_port),), daemon=False).start()
-        Process(target=ServerRecepcionista, name='RC', args=(dict(self.servers_ip_port),), daemon=False).start()
+        #Process(target=ServerRecepcao, name='RC', args=(dict(self.servers_ip_port),), daemon=False).start()
         Process(target=ServerConsulta, name='CS', args=(dict(self.servers_ip_port),), daemon=False).start()
-
+        Process(target=ServerReserva, name='CS', args=(dict(self.servers_ip_port),), daemon=False).start()
     
     def reconnect(self):
         print(f'[º] {self.name_server}: Reconnecting Server...')

@@ -184,3 +184,9 @@ CONSTRAINT FK_Receita_com_remedio FOREIGN KEY (ID_Receita) REFERENCES receita(ID
 CONSTRAINT FK_Remedio_na_receita FOREIGN KEY (ID_Remedio) REFERENCES remedio(ID) ON DELETE CASCADE,
 CONSTRAINT AK_Receita_Remedio UNIQUE(ID_Receita, ID_Remedio)
 );
+
+CREATE TABLE IF NOT EXISTS receita_reservada (
+ID_Receita INT UNSIGNED NOT NULL UNIQUE,
+Retirada BOOLEAN NOT NULL,
+CONSTRAINT FK_Receita_com_remedio_reservada FOREIGN KEY (ID_Receita) REFERENCES receita(ID) ON DELETE CASCADE
+);
