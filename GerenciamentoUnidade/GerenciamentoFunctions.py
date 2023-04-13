@@ -3,28 +3,24 @@ import json
 import re
 from contextlib import contextmanager
 
+#! Não vai dar pra fazer
 class Gerenciador:
     def __init__(self) -> None:
         self.server = {}
         self.functions = {
-            'Del_Profissional': self.del_profissional,
-            'Get_Profissional': self.get_profissional,
-            'Cadastro_Recepcionista': self.cadastro_rc,
-            'Cadastro_Medico': self.cadastro_md,
-            'Cadastro_Farmaceutico': self.cadastro_fc,
-            'Get_Avaliacoes_Unidade': self.get_avaliacoes_unidade,
-            'Get_Avaliacoes_Profissionais': self.get_avaliacoes_profissionais,
             'Insert_Especializacao': self.insert_especializacao,
+            'Del_Especializacao': self.del_especializacao,
             'Insert_Doenca': self.insert_doenca,
-            'Insert_Remedio': self.insert_remedio,
             'Insert_Doenca_Remedio': self.insert_doenca_remedio,
+            'Del_Doenca_Remedio': self.del_doenca_remedio,
             'Insert_Remedio_Estoque': self.insert_remedio_estoque,
+            'Del_Remedio_Estoque': self.del_remedio_estoque,
+            'Insert_Remedio': self.insert_remedio,
+            'Del_Remedio': self.del_remedio,
             'Insert_Calendario': self.insert_calendario,
+            'Del_Calendario': self.del_calendario,
             'Insert_Calendario_Especializacao_Medico': self.insert_calendario_especializacao_medico,
-            'Insert_Consulta_Disponivel': self.insert_consulta_disponivel,
-            'Get_Consultas_Reservadas': self.get_consultas_disponiveis,
-            'Get_Consultas_Realizadas': self.get_consultas_realizadas,
-            
+            'Del_Calendario_Especializacao_Medico': self.del_calendario_especializacao_medico,
             'Backup_DB': self.backup_db,
             'Get_Backups_DB': self.backup_db,
         }
@@ -44,86 +40,6 @@ class Gerenciador:
             else:
                 value = {'Response': (406, 'Data Type Error'), 'Result': ()}
         return value
-    
-    def del_profissional(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'CPF' in value.keys() and isinstance(value['CPF'], str):
-            cpf = value['CPF']
-            response_get_rc =  self.get_profissional({'CPF': cpf})
-            if response_get_rc['Response'][0] == 200 and len(response_get_rc['Results']['Result']):
-                del_pe = {'function': 'Delete','table_name': 'pessoa', 'where': self._normalize_type({'CPF': cpf}, 'where')}
-                del_rc = {'function': 'Delete','table_name': 'profissional', 'where': self._normalize_type({'ID_Pessoa': response_get_rc['Results']['Result'][0]['ID']}, 'where')}
-                response = self.response_in_server(del_rc)
-                self.response_in_server(del_pe)
-        return response
-    
-
-    def get_profissional(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'CPF' in value.keys() and isinstance(value['CPF'], str):
-            cpf = value['CPF']
-            if len(cpf) == 11:
-                response_pe = self._get_pessoa(cpf)
-                if response_pe['Response'][0] == 200 and len(response_pe['Results']['Result']):
-                    id_pe = response_pe['Results']['Result'][0]['ID']
-                    response_pr = self._get_profissional(id_pe)
-                    if response_pr['Response'][0] == 200 and len(response_pr['Results']['Result']):
-                        id_pr = response_pe['Results']['Result'][0]['ID_Pessoa']
-                        get_rc = {'function': 'Select','table_name': 'profissional', 'where': self._normalize_type({'ID_Profissional': id_pr}, 'where')}
-                        response_rc = self.response_in_server(get_rc)
-                        response = response_rc
-                        if len(response_rc['Results']['Result']):
-                            id_rc = response_rc['Results']['Result'][0].pop('ID')
-                            for key in response_pe['Results']['Result'][0].keys():
-                                response['Results']['Result'][0][key] = response_pe['Results']['Result'][0][key]
-                            response['Results']['Result'][0]['ID'] = id_rc
-        return response
-    
-    def _get_pessoa(self, cpf:str):
-        get_pe = {'function': 'Select','table_name': 'pessoa', 'where': self._normalize_type({'CPF': cpf}, 'where')}
-        response = self.response_in_server(get_pe)
-        return response
-    
-    def _get_profissional(self, id_pessoa:int):
-        get_pr = {'function': 'Select','table_name': 'profissional', 'where': self._normalize_type({'ID_Pessoa': id_pessoa}, 'where')}
-        response = self.response_in_server(get_pr)
-        return response
-    
-    def cadastro_rc(self, value:dict):
-        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        if 'CPF' in value.keys() and isinstance(value['CPF'], str) and len(value['CPF']) == 11:
-            response_pe = self._cadastro_pe(value)
-            if response_pe['Results']['Response'][0] == 200 and len(response_pe['Results']['Result']):
-                id_pessoa = self._get_pessoa(value['CPF'])['Results']['Result'][0]['ID']
-                self._cadastro_pr({'ID_Pessoa': id_pessoa})
-                id_profissional = self._get_profissional(id_pessoa)
-                set_rc = {'function': 'Insert', 'table_name': 'profissional', 'values': self._normalize_type({'ID_Profissional': id_profissional}, 'values')}
-                response_rc = self.response_in_server(set_rc)
-                response = response_rc
-        return response
-
-    def _cadastro_pr(self, value:dict):
-        set_pr = {'function': 'Insert', 'table_name': 'profissional', 'values': self._normalize_type(value, 'values')}
-        response_pr = self.response_in_server(set_pr)
-        return response_pr
-    
-    def _cadastro_pe(self, value:dict):
-        set_pe = {'function': 'Insert', 'table_name': 'pessoa', 'values': self._normalize_type(value, 'values')}
-        response_pe = self.response_in_server(set_pe)
-        return response_pe
-    
-    def update_pe(self, value:dict): 
-        value_w = {}
-        if 'CPF' in value.keys():
-            value_w['CPF'] = value.pop('CPF')
-        if 'ID' in value.keys():
-            value_w['ID'] = value.pop('CPF')
-        response = {'Response': (406, 'Failed')}
-        if value_w.keys():
-            upd_pe = {'function': 'Update', 'table_name': 'pessoa', 'where': self._normalize_type(value_w, 'where'), 'values': self._normalize_type(value, 'values')}
-            response_pe = self.response_in_server(upd_pe)
-            response = response_pe
-        return response
     
     def _normalize_type(self, value:dict, option:str):
         value_aux = []
@@ -146,6 +62,7 @@ class Gerenciador:
                 value_aux.append({'name':key, 'operator': '=', 'value': x})
         #print('Valor final -> ', value_aux)
         return value_aux
+    
     def response_in_server(self, get:dict, server_name:str='DB'):
         data = json.dumps(get, indent=2).encode('utf-8')
         response = {'Response': (404, f'Error Connecting to {server_name} ')}
@@ -163,6 +80,7 @@ class Gerenciador:
             except Exception as e:
                 self.server.pop(server_name)
         return response
+    
     @contextmanager
     def connection_to_server(self, server_name:str):
         try:

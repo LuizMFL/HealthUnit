@@ -312,6 +312,7 @@ class Paciente:
                 value_aux.append({'name':key, 'operator': '=', 'value': x})
         #print('Valor final -> ', value_aux)
         return value_aux
+    
     def response_in_server(self, get:dict, server_name:str='DB'):
         data = json.dumps(get, indent=2).encode('utf-8')
         response = {'Response': (404, f'Error Connecting to {server_name} ')}

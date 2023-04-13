@@ -7,10 +7,11 @@ class Farmaceutico:
     def __init__(self) -> None:
         self.server = {}
         self.functions = {
-            'Get_Estoque': self.get_estoque,
+            'Get_Remedios': self.get_remedios, # Opcional ID_Remedio e Nome
+            'Get_Estoque': self.get_estoque, # Opcional ID_Remedio
             'Entregar_Medicamento': self.entregar_medicamento,
-            'Get_Receitas': self.get_receitas, # ID_Paciente ou CPF #! Depende da Consulta
-            'Get_Receita_Remedio': self.get_receita_remedio # ID_Receita #! Depende dos Remedios que estarão na Farmacia
+            'Get_Receita_Remedio': self.get_receita_remedio, # ID_Receita 
+            'Update_Remedio_Estoque': self.update_remedio_estoque
         }
 
     def Select_function(self, value:dict):

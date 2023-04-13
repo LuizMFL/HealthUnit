@@ -9,15 +9,16 @@ class Consulta:
         self.server = {}
         self.functions = {
             'Get_Calendarios': self.get_calendarios, # {'Atual': bool}
-            'Insert_Calendario_Especializacao_Medico': self.insert_calendario_especializacao_medico, # Adicionar uma data ao calendario e Cria tambem as consultas com um tempo xxmin de cada consulta e elas são todas disponiveis
+            'Insert_Calendario_Especializacao_Medico': self.insert_calendario_especializacao_medico, #? # Adicionar uma data ao calendario e Cria tambem as consultas com um tempo xxmin de cada consulta e elas são todas disponiveis
             'Del_Calendario_Especializacao_Medico': self.del_calendario_especializacao_medico,
+            'Insert_Consulta_Disponivel': self.insert_consulta_disponivel, # Vai usar o insert calendario_especializacao_medico 
             'Get_Consultas_Disponiveis': self.get_consultas_disponiveis, # Sempre que chamada irá deletar as consultas que tiverem o tempo inicial menor ou igual do tempo atual e data atual
             'Get_Consultas_Reservadas': self.get_consultas_reservadas, # Receber também o bool para definir se é uma consulta Realizada ou não
             'Get_Consultas_Especializacao_Disponiveis': self.get_consultas_especializacao_disponiveis, # Usar o get_consultas disponiveis, Especialização é OPCIONAL
             'Reservar_Consulta': self.reservar_consulta, # Deleta a consulta disponivel com o mesmo ID e adiciona ela à Reservada
             'Del_Consulta_Reservada': self.del_consulta_reservada, # Deleta da consulta reservada CASO não tenha sido realizada e CASO esteja antes do tempo inicial ela é adicionada às consultas disponíveis
         }
-        
+            
     def Select_function(self, value:dict):
         try:
             self.server = value['Servidores']
