@@ -150,12 +150,3 @@ class Reserva:
         finally:
             sock.close()
         yield
-
-if __name__ == '__main__':
-    p = Medico()
-    a = p.cadastro_md({'CPF': '10154389450', 'Nome': 'Francisco', 'Telefone': '81999932153', 'Email': 'luis.sda.3dqda@gmail.com', 'CEP': '51394123', 'Complem_Endereco': 'dasdadaNADa','Idade': 1, 'Genero': 'H', 'Nascimento': '15-03-2001'})
-    print(a)
-    b = p.get_medico({'CPF':'10154389450'})
-    print(b)
-    c = p.get_consultas_realizadas({'CPF':'10154389450'})
-    print(c)
