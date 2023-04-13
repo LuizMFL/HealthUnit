@@ -7,7 +7,6 @@ class Recepcionista:
     def __init__(self) -> None:
         self.server = {}
         self.functions = {
-            'Confirmar_Consulta': self.confirmar_consulta
         }
         
     def Select_function(self, value:dict):

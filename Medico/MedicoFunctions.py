@@ -10,11 +10,11 @@ class Medico:
             'Get_Especializacao': self.get_especializacoes, # Opcional ID_Especializacao ou Nome
             'Get_Doencas': self.get_doencas, # Opcional ID_Doenca ou Nome
             'Get_Doenca_Remedio': self.get_doenca_remedio, # Opcional ID_Doenca ou Nome #! Depende de Farmacia
-            'Insert_Especializacao_Medico': self.insert_especializacao_medico,
-            'Del_Especializacao_Medico': self.del_especializacao_medico,
-            'Create_Receita': self.insert_receita,
-            'Create_Receita_Remedio': self.insert_receita_remedio,
-            'Del_Receita_Remedio': self.del_receita_remedio,
+            'Insert_Especializacao_Medico': self.insert_especializacao_medico, # ID_Especializacao e ID_Medico
+            'Del_Especializacao_Medico': self.del_especializacao_medico, # ID_Especializacao e ID_Medico
+            'Create_Receita': self.insert_receita, # ID_Paciente, ID_Consulta e Data_Validade
+            'Create_Receita_Remedio': self.insert_receita_remedio, # ID_Receita, ID_Remedio e Quantidade
+            'Del_Receita_Remedio': self.del_receita_remedio, # ID_Receita e ID_Remedio, só deleta CASO ele não tenha sido retirado
             'Reservar_Receita': self.reservar_receita, #? Envia um pedido de reservar para um servidor e nele terá o ID da receita (Toda complexidade de verificar estoque e atualizar ele deverá ser levada em consideração)
             'Get_Receitas': self.get_receitas, # ID_Paciente ou CPF #! Depende da Consulta
             'Get_Calendario_Medico': self.get_calendario_medico, #! Usar get_calendarios da Consulta
@@ -36,6 +36,72 @@ class Medico:
                 value = {'Response': (406, 'Data Type Error'), 'Result': ()}
         return value
     
+    def del_receita_remedio(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Receita' in value.keys() and isinstance(value['ID_Receita'], int) and 'ID_Remedio' in value.keys() and isinstance(value['ID_Remedio'], int):
+            values = {
+                'ID_Receita': value['ID_Receita'],
+                'ID_Remedio': value['ID_Remedio'],
+                'Retirada': False
+            }
+            del_receita_remedio = {'function': 'Delete','table_name': 'receita_remedio', 'where': self._normalize_type(values, 'values')}
+            response_receita_remedio = self.response_in_server(del_receita_remedio)
+            if response_receita_remedio['Response'][0] == 200:
+                response = response_receita_remedio
+        return response
+    def insert_receita(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int) and 'ID_Consulta' in value.keys() and isinstance(value['ID_Consulta'], int) and 'Data_Validade' in value.keys() and isinstance(value['Data_Validade'], str):
+            values = {
+                'ID_Paciente': value['ID_Paciente'],
+                'ID_Consulta': value['ID_Consulta'],
+                'Data_Validade': value['Data_Validade']
+            }
+            set_receita = {'function': 'Insert','table_name': 'receita', 'values': self._normalize_type(values, 'values')}
+            response_receita = self.response_in_server(set_receita)
+            if response_receita['Response'][0] == 200:
+                response = response_receita
+        return response
+    
+    def insert_receita_remedio(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Receita' in value.keys() and isinstance(value['ID_Receita'], int) and 'ID_Remedio' in value.keys() and isinstance(value['ID_Remedio'], int) and 'Quantidade' in value.keys() and isinstance(value['Quantidade'], int) and value['Quantidade'] > 0:
+            values = {
+                'ID_Receita': value['ID_Receita'],
+                'ID_Remedio': value['ID_Remedio'],
+                'Quantidade': value['Quantidade'],
+                'Retirada': False
+            }
+            set_receita_remedio = {'function': 'Insert','table_name': 'receita_remedio', 'values': self._normalize_type(values, 'values')}
+            response_receita_remedio = self.response_in_server(set_receita_remedio)
+            if response_receita_remedio['Response'][0] == 200:
+                response = response_receita_remedio
+        return response
+    def insert_especializacao_medico(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Especializacao' in value.keys() and isinstance(value['ID_Especializacao'], int) and 'ID_Medico' in value.keys() and isinstance(value['ID_Medico'], int):
+            values = {
+                'ID_Especializacao': value['ID_Especializacao'],
+                'ID_Medico': value['ID_Medico']
+            }
+            set_esp_med = {'function': 'Insert','table_name': 'especializacao_medico', 'values': self._normalize_type(values, 'values')}
+            response_esp_med = self.response_in_server(set_esp_med)
+            if response_esp_med['Response'][0] == 200:
+                response = response_esp_med
+        return response
+    
+    def del_especializacao_medico(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        if 'ID_Especializacao' in value.keys() and isinstance(value['ID_Especializacao'], int) and 'ID_Medico' in value.keys() and isinstance(value['ID_Medico'], int):
+            values = {
+                'ID_Especializacao': value['ID_Especializacao'],
+                'ID_Medico': value['ID_Medico']
+            }
+            set_esp_med = {'function': 'Delete','table_name': 'especializacao_medico', 'where': self._normalize_type(values, 'where')}
+            response_esp_med = self.response_in_server(set_esp_med)
+            if response_esp_med['Response'][0] == 200:
+                response = response_esp_med
+        return response
     def get_doenca_remedio(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         response_doenca = self.get_doencas(value)

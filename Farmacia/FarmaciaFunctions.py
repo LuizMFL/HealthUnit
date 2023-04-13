@@ -11,7 +11,8 @@ class Farmaceutico:
             'Get_Estoque': self.get_estoque, # Opcional ID_Remedio
             'Entregar_Medicamento': self.entregar_medicamento,
             'Get_Receita_Remedio': self.get_receita_remedio, # ID_Receita 
-            'Update_Remedio_Estoque': self.update_remedio_estoque
+            'Update_Remedio_Estoque': self.update_remedio_estoque,
+            
         }
 
     def Select_function(self, value:dict):
