@@ -19,7 +19,7 @@ class Consulta:
             'Del_Consulta_Reservada': self.del_consulta_reservada, # Deleta da consulta reservada CASO não tenha sido realizada e CASO esteja antes do tempo inicial ela é adicionada às consultas disponíveis
             'Confirmar_Consulta': self.confirmar_consulta
         }
-            
+
     def Select_function(self, value:dict):
         try:
             self.server = value['Servidores']

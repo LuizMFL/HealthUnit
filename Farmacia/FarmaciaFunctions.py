@@ -3,15 +3,16 @@ import json
 import re
 from contextlib import contextmanager
 
-class Farmaceutico:
+class Farmacia:
     def __init__(self) -> None:
         self.server = {}
         self.functions = {
             'Get_Remedios': self.get_remedios, # Opcional ID_Remedio e Nome
             'Get_Estoque': self.get_estoque, # Opcional ID_Remedio
             'Entregar_Medicamento': self.entregar_medicamento,
-            'Get_Receita_Remedio': self.get_receita_remedio, # ID_Receita 
-            'Update_Remedio_Estoque': self.update_remedio_estoque
+            'Get_Receita_Remedio': self.get_receita_remedio, # ID_Receita entrega tudo da receita_remedio (usa get_remedios para completar) e entrega mo ID_Receita
+            'Update_Remedio_Estoque': self.update_remedio_estoque, 
+            
         }
 
     def Select_function(self, value:dict):
@@ -189,13 +190,3 @@ class Farmaceutico:
                         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
                         break
         return response
-
-
-if __name__ == '__main__':
-    p = Farmaceutico()
-    a = p.cadastro_fc({'CPF': '10154389450', 'Nome': 'Francisco', 'Telefone': '81999932153', 'Email': 'luis.sda.3dqda@gmail.com', 'CEP': '51394123', 'Complem_Endereco': 'dasdadaNADa','Idade': 1, 'Genero': 'H', 'Nascimento': '15-03-2001'})
-    print(a)
-    b = p.get_farmaceutico({'CPF':'10154389450'})
-    print(b)
-    c = p.get_consultas_realizadas({'CPF':'10154389450'})
-    print(c)

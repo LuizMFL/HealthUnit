@@ -171,6 +171,7 @@ ID INT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
 ID_Paciente MEDIUMINT UNSIGNED NOT NULL,
 ID_Consulta INT UNSIGNED NOT NULL UNIQUE,
 Data_Validade DATE NOT NULL,
+CONSTRAINT PK_Consulta PRIMARY KEY (ID),
 CONSTRAINT FK_Consulta_Paciente_Reservada FOREIGN KEY (ID_Paciente, ID_Consulta) REFERENCES consulta_paciente_reservada(ID_Paciente, ID_Consulta) ON DELETE CASCADE
 );
 
@@ -182,4 +183,10 @@ Retirada BOOLEAN NOT NULL,
 CONSTRAINT FK_Receita_com_remedio FOREIGN KEY (ID_Receita) REFERENCES receita(ID) ON DELETE CASCADE,
 CONSTRAINT FK_Remedio_na_receita FOREIGN KEY (ID_Remedio) REFERENCES remedio(ID) ON DELETE CASCADE,
 CONSTRAINT AK_Receita_Remedio UNIQUE(ID_Receita, ID_Remedio)
+);
+
+CREATE TABLE IF NOT EXISTS receita_reservada (
+ID_Receita INT UNSIGNED NOT NULL UNIQUE,
+Retirada BOOLEAN NOT NULL,
+CONSTRAINT FK_Receita_com_remedio_reservada FOREIGN KEY (ID_Receita) REFERENCES receita(ID) ON DELETE CASCADE
 );
