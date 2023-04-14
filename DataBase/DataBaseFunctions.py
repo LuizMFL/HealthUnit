@@ -10,7 +10,7 @@ class DataBase:
         self.PATH_DataSets = str(Path(__file__).parent / 'Datasets')
         self.config = {
             'user': 'root',
-            'password': 'Lu1zM1gu3l#My$QL',
+            'password': 'lucas0519',
             'host': 'localhost',
             'cursorclass': pymysql.cursors.DictCursor,
             'charset': 'utf8mb4',

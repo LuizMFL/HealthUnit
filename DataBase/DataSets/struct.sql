@@ -8,7 +8,7 @@ Telefone CHAR(11) NOT NULL,
 Email VARCHAR(200) NOT NULL,
 CEP CHAR(8) NOT NULL,
 Complem_Endereco VARCHAR(200) NOT NULL,
-Genero ENUM('H','M','G','T', 'L'),
+Genero ENUM('M','F','N','O', 'P'),
 Nascimento DATE NOT NULL,
 CONSTRAINT PK_Pessoa PRIMARY KEY (ID)
 );
@@ -124,8 +124,7 @@ CREATE TABLE IF NOT EXISTS calendario (
 ID SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE,
 Data_Calendar DATE NOT NULL UNIQUE,
 Dia_Semana ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
-CONSTRAINT PK_Calendario PRIMARY KEY (ID),
-CONSTRAINT AK_Calendario UNIQUE(Data_Calendar)
+CONSTRAINT PK_Calendario PRIMARY KEY (ID)
 );
 
 CREATE TABLE IF NOT EXISTS calendario_especializacao_medico (
@@ -189,4 +188,13 @@ CREATE TABLE IF NOT EXISTS receita_reservada (
 ID_Receita INT UNSIGNED NOT NULL UNIQUE,
 Retirada BOOLEAN NOT NULL,
 CONSTRAINT FK_Receita_com_remedio_reservada FOREIGN KEY (ID_Receita) REFERENCES receita(ID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS login_usuario (
+Username VARCHAR(255) NOT NULL UNIQUE,
+Senha VARCHAR(255) NOT NULL,
+Tipo ENUM('Paciente', 'Medico', 'Recepcionista', 'Farmaceutico'),
+ID_Pessoa MEDIUMINT UNSIGNED NOT NULL,
+CONSTRAINT PK_Login PRIMARY KEY (Username),
+CONSTRAINT FK_Login FOREIGN KEY (ID_Pessoa) REFERENCES pessoa(ID) ON DELETE CASCADE
 );
