@@ -144,7 +144,7 @@ class Consulta:
         self.get_calendarios()
         for consu in response_cons['Results']['Result']:
             get_calen = {'function': 'Select', 'table_name': 'calendario', 'where': []}
-            ID_Calendario_Especializacao_Medico
+            #ID_Calendario_Especializacao_Medico
     def _atualizar_consultas_disponiveis(self):
         pass
     
