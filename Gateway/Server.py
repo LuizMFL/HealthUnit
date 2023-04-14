@@ -1,5 +1,5 @@
 import socket
-from Gateway.GatewayAPI import *
+from Gateway.api import *
 import json
 from threading import Thread
 import sys
@@ -8,7 +8,8 @@ class Server:
         self.name_server = 'GT'
         self.servers_ip_port = dict(servidores)
         self.name_servidores = dict(servidores).popitem()[0]
-        self.GT = GatewayAPI(self.servers_ip_port)
+        #self.ap = api()
+        app.run()
         self.__bind()
         Thread(target=self.__send_ip_port_to_serverServidores, args=(self,), daemon=True).start()
         self.server()
@@ -70,6 +71,7 @@ class Server:
     
     def __new_servers_ip_port(self, value:dict):
         self.servers_ip_port = {x:tuple(value['values'][0][x]) for x in value['values'][0].keys()}
+        self.ap.servers_ip_port = self.servers_ip_port
         print(f'[%] {self.name_server}: Updated servers_ip_port')
     
     def __desligar_server(self):
