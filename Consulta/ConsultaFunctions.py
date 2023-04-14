@@ -52,24 +52,31 @@ class Consulta:
 
     def get_consultas_reservadas(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        values = {}
-        if 'ID_Consulta' in value.keys() and isinstance(value['ID_Consulta'], int):
-            values = {'ID_Consulta': value['ID_Consulta']}
-        elif 'ID_Paciente' in value.keys() and isinstance(value['ID_Paciente'], int):
-            values = {'ID_Paciente': value['ID_Paciente']}
-        if 'Realizada' in value.keys() and isinstance(value['Realizada'], bool):
-            values['Realizada'] =  value['Realizada']
-        if len(values.keys()):
-            get_cons_reservadas = {'function': 'Select', 'table_name': 'consulta_paciente_reservada', 'where': self._normalize_type(values, 'where')}
-            response_cons_reserv = self.response_in_server(get_cons_reservadas)
-            if response_cons_reserv['Response'][0] == 200:
-                for cons_reserv in response_cons_reserv['Results']['Result']:
-                    values = {'ID_Consulta': cons_reserv['ID_Consulta']}
-                    response_consulta = self._get_consultas(values)
-                    if response_consulta['Response'][0] == 200:
-                        response_consulta['Results']['Result'][0].pop('ID')
-                        values = {'ID_Consult'}
+        response_cons = self._get_consultas(value)
+        if response_cons['Response'][0] == 200:
+            data_atual = datetime.now().date()
+            get_cons_pac_res = {'function': 'Select', 'table_name': 'consulta_paciente_reservada', 'where': []}
+            response_cons_reser = self.response_in_server(get_cons_pac_res)
+            if response_cons_reser['Response'][0] == 200:
+                response = dict(response_cons_reser)
+                response['Results']['Result'] = []
+                cons_res_a = [x.update(y) for x in response_cons['Results']['Result'] for y in response_cons_reser['Results']['Result'] if x['ID'] == y['ID_Consulta']]
+                for cons in cons_res_a:
+                    cons.pop('ID_Consulta')
+                    if not cons['Realizada']:
+                        if datetime.strptime(cons['Calendario_Especializacao_Medico']['Calendario']['Data_Calendar'], '%d/%m/%Y').date() >= data_atual:
+                            response['Results']['Result'].append(cons)
+                        else:
+                            values = {'ID_Consulta': cons['ID']}
+                            self._del_consulta_reservada(values)
+                    else:
+                        response['Results']['Result'].append(cons)
+        return response
     
+    def _del_consulta_reservada(self, value:dict):
+        del_cons_disp = {'function': 'Delete', 'table_name': 'consulta_paciente_reservada', 'where': self._normalize_type(value, 'where')}
+        response = self.response_in_server(del_cons_disp)
+        return response
     def get_calendarios(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
         if 'Atual' in value.keys() and isinstance(value['Atual'], bool):
@@ -124,27 +131,81 @@ class Consulta:
                 pass
         return response
     
-    def get_especializacao_medico(self, value:dict):
+    def get_consultas_especializacao_disponiveis(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        values = {}
-        if 'ID_Especializacao' in value.keys() and isinstance(value['ID_Especializacao'], int):
-            values['ID_Especializacao'] = value['ID_Especializacao']
-        elif 'ID_Medico' in value.keys() and isinstance(value['ID_Medico'], int):
-            values['ID_Medico'] = value['ID_Medico']
-        get_esp_med = {'function': 'Select', 'table_name': 'especializacao_medico', 'where': self._normalize_type(values, 'where')}
-        self.response_in_server(get_esp_med, 'MD')
-        
+        response_cons_disp = self.get_consultas_disponiveis({}) 
     def get_consultas_disponiveis(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
-        get_consulta_disponivel = {'function': 'Select', 'table_name': 'consulta_disponivel', 'where': []}
+        response_cons = self._get_consultas(value)
+        if response_cons['Response'][0] == 200:
+            data_atual = datetime.now().date()
+            get_cons_disp = {'function': 'Select', 'table_name': 'consulta_disponivel', 'where': []}
+            response_cons_disp = self.response_in_server(get_cons_disp)
+            if response_cons_disp['Response'][0] == 200:
+                response = dict(response_cons_disp)
+                response['Results']['Result'] = []
+                cons_disp_a = [x for x in response_cons['Results']['Result'] for y in response_cons_disp['Results']['Result'] if x['ID'] == y['ID_Consulta']]
+                for cons in cons_disp_a:
+                    if datetime.strptime(cons['Calendario_Especializacao_Medico']['Calendario']['Data_Calendar'], '%d/%m/%Y').date() >= data_atual:
+                        response['Results']['Result'].append(cons)
+                    else:
+                        values = {'ID_Consulta': cons['ID']}
+                        self._del_consulta_disponivel(values)
+        return response
+    
+    def _del_consulta_disponivel(self, value:dict):
+        del_cons_disp = {'function': 'Delete', 'table_name': 'consulta_disponivel', 'where': self._normalize_type(value, 'where')}
+        response = self.response_in_server(del_cons_disp)
+        return response
+    def _get_especializacao_medico(self, value:dict):
+        get_cons = {'function': 'Select', 'table_name': 'especializacao_medico', 'where': self._normalize_type(value, 'where')}
+        response_esp_med = self.response_in_server(get_cons)
+        response = response_esp_med
+    def _get_calendarios_especializacao_medico(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        get_cons = {'function': 'Select', 'table_name': 'calendario_especializacao_medico', 'where': self._normalize_type(value, 'where')}
+        response_calen_esp_med = self.response_in_server(get_cons)
+        if response_calen_esp_med['Response'][0] == 200:
+            response = dict(response_calen_esp_med)
+            response['Results']['Result'] = []
+            for calen_esp_med in response_calen_esp_med['Results']['Result']:
+                values = {'ID_Calendario': calen_esp_med['ID_Calendario']}
+                response_calen = self.get_calendarios(values)
+                if response_calen['Response'][0] == 200:
+                    values = {
+                        'ID_Especializacao': calen_esp_med['ID_Especializacao'],
+                        'ID_Medico': calen_esp_med['ID_Medico']
+                        }
+                    get_esp_med = {'function': 'Get_Especializacao_Medico', 'values': values}
+                    response_especializacao_medico = self.response_in_server(get_esp_med, 'MD')
+                    if response_especializacao_medico['Response'][0] == 200:
+                        calen_esp_med.pop('ID_Calendario')
+                        calen_esp_med.pop('ID_Especializacao')
+                        calen_esp_med.pop('ID_Medico')
+                        calen_esp_med['Calendario'] = response_calen['Results']['Result'][0]
+                        calen_esp_med['Especializacao_Medico'] = response_especializacao_medico['Results']['Result'][0]
+                        response['Results']['Result'].append(calen_esp_med)
+        return response
 
     def _get_consultas(self, value:dict):
-        get_cons = {'function': 'Select', 'table_name': 'consulta', 'where': []}
+        values = {}
+        if 'ID_Consulta' in value.keys() and isinstance(value['ID_Consulta'], int):
+            values = {'ID', value['ID_Consulta']}
+        elif 'ID_Calendario_Especializacao_Medico' in value.keys() and isinstance(value['ID_Calendario_Especializacao_Medico'], int):
+            values = {'ID_Calendario_Especializacao_Medico', value['ID_Calendario_Especializacao_Medico']}
+        get_cons = {'function': 'Select', 'table_name': 'consulta', 'where': self._normalize_type(values, 'where')}
         response_cons = self.response_in_server(get_cons)
-        self.get_calendarios()
-        for consu in response_cons['Results']['Result']:
-            get_calen = {'function': 'Select', 'table_name': 'calendario', 'where': []}
-            #ID_Calendario_Especializacao_Medico
+        if response_cons['Response'][0] == 200:
+            response = dict(response_cons)
+            response['Results']['Result'] = []
+            for consu in response_cons['Results']['Result']:
+                values = {'ID', consu['ID_Calendario_Especializacao_Medico']}
+                response_calen_esp = self._get_calendarios_especializacao_medico(values)
+                if response_calen_esp['Response'][0] == 200:
+                    consu.pop('ID_Calendario_Especializacao_Medico')
+                    consu['Calendario_Especializacao_Medico'] = response_calen_esp['Results']['Result'][0]
+                    response['Results']['Result'].append(consu)
+        return response
     def _atualizar_consultas_disponiveis(self):
         pass
     

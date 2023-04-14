@@ -16,6 +16,7 @@ class Medico:
             'Create_Receita_Remedio': self.insert_receita_remedio, # ID_Receita, ID_Remedio e Quantidade
             'Get_Receita': self.get_receita, # ID_Consulta
             'Del_Receita_Remedio': self.del_receita_remedio, # ID_Receita e ID_Remedio, só deleta CASO ele não tenha sido retirado
+            'Get_Especializacao_Medico': self.get_especializacao_medico #  Obrigatorio ID_Especializacao ou ID_Medico
         }
         
     def Select_function(self, value:dict):
@@ -33,6 +34,43 @@ class Medico:
             else:
                 value = {'Response': (406, 'Data Type Error'), 'Result': ()}
         return value
+
+    def get_especializacao_medico(self, value:dict):
+        response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
+        values = {}
+        if 'ID_Especializacao' in value.keys() and isinstance(value['ID_Especializacao'], int):
+            values['ID_Espeicalizacao'] = value['ID_Especializacao']
+        if 'ID_Medico' in value.keys() and isinstance(value['ID_Medico'], int):
+            values['ID_Medico'] = value['ID_Medico']
+        if len(values.keys()):
+            get_esp_med = {'function': 'Select','table_name': 'especializacao_medico', 'where': self._normalize_type(values, 'where')}
+            response_esp_med = self.response_in_server(get_esp_med)
+            if response_esp_med['Response'][0] == 200:
+                response = dict(response_esp_med)
+                response['Results']['Result'] = []
+                for esp_med in response_esp_med['Results']['Result']:
+                    values_m = {'ID': esp_med['ID_Medico']}
+                    response_med = self._get_medico(values_m)
+                    if response_med['Response'][0] == 200:
+                        values_pr = {'ID_Profissional': response_med['Results']['Result'][0]['ID_Profissional']}
+                        get_prof = {'function': 'Get_Profissional', 'values': values_pr}
+                        response_prof = self.response_in_server(get_prof, 'PR')
+                        if response_prof['Response'][0] == 200:
+                            values_esp = {'ID_Especializacao': esp_med['ID_Especializacao']}
+                            response_esp = self.get_especializacoes(values_esp)
+                            if response_esp['Response'][0] == 200:
+                                esp_med.pop('ID_Medico')
+                                esp_med.pop('ID_Especializacao')
+                                esp_med['Especializacao'] = response_esp['Results']['Result'][0]
+                                esp_med['Medico'] = response_med['Results']['Result'][0]
+                                response['Results']['Result'].append(esp_med)
+        return response
+
+    def _get_medico(self, value:dict):
+        get_med = {'function': 'Select','table_name': 'medico', 'where': self._normalize_type(value, 'where')}
+        response_receita_remedio = self.response_in_server(get_med)
+        response = response_receita_remedio
+        return response
 
     def del_receita_remedio(self, value:dict):
         response = {'Response': (406, 'Failed'), 'Results':{'Result':[]}}
