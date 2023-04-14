@@ -2,7 +2,6 @@ from DataBase.Server import Server as ServerDB
 from Profissional.Server import Server as ServerProfissional
 from Paciente.Server import Server as ServerPaciente
 from Farmacia.Server import Server as ServerFarmacia
-from GerenciamentoUnidade.Server import Server as ServerGerenciador
 from Medico.Server import Server as ServerMedico
 from Consulta.Server import Server as ServerConsulta
 from Reserva.Server import Server as ServerReserva
@@ -13,11 +12,6 @@ import keyboard
 import sys
 from multiprocessing import Process
 from os import getpid, getppid
-
-from fastapi import FastAPI
-
-app = FastAPI()
-
 class Servidores:
     def __init__(self) -> None:
         self.name_server = 'Servidores'
@@ -134,6 +128,7 @@ class Servidores:
     def __new_server_ip_port(self, value:dict):
         self.servers_ip_port[value['name_server']] = tuple(value['values'][0])
         print(f'[%] {self.name_server}: Update server_ip_port {value["name_server"]} to {value["values"][0]}')
+        print(f'SERVIDORES -> {self.servers_ip_port}')
         Thread(target=self.__send_servers_ip_port, args=(self,), daemon=True).start()
 
 if __name__ == '__main__':
