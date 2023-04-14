@@ -13,6 +13,11 @@ import keyboard
 import sys
 from multiprocessing import Process
 from os import getpid, getppid
+
+from fastapi import FastAPI
+
+app = FastAPI()
+
 class Servidores:
     def __init__(self) -> None:
         self.name_server = 'Servidores'
